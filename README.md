@@ -23,7 +23,7 @@ On Windows:
 2. Since webdrivers are not packaged into installers on Windows, you will have to pick a webdriver compatible with your browser and download it where you downloaded pytaku. This could be improved either by webdriver devs actually making installers, or by me doing an evil workaround that downloads one for you.
 3. See 'On anything but Windows'.
 4. Install dependencies. You are doomed to use pip unfortunately, but there's a nice requirements.txt file to make it less painful for you. Try the following command:
-`pip install -f requirements.txt`
+`pip install -r requirements.txt`
 5. See 'On anything but Windows'.
 
 On Mac:
