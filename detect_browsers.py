@@ -24,7 +24,7 @@ class browser_type(object):
 			if operating_system in nsa_botnet:
 				browser_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\"+self.windows_exe,0,winreg.KEY_READ)
 				exe_file = winreg.QueryValue(browser_key,None)
-				f = open(browser_exe)
+				f = open(exe_file)
 				f.close()
 			else:
 				process = subprocess.check_output("command -v "+self.exe+" >/dev/null", shell=True)
