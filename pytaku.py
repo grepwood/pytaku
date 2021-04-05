@@ -14,31 +14,6 @@ import detect_browsers
 import pdb
 import sys
 
-def get_id_from_string(line,series_found_regex):
-	result = re.sub(series_found_regex,'',line)
-	return re.sub('-.*$','',result)
-
-def get_title_from_string(line):
-	result = re.sub('^.*<em>','',line)
-	result = re.sub('<\/em>.*$','',result)
-	result = re.sub('</a>.*$','',result)
-	return re.sub('^.*">','',result)
-
-def search_for_anime(search_term):
-	series_found_regex = '^<h3> <a href="/series/'
-	search_url = 'https://shinden.pl/series?search='+search_term
-	req = requests.get(search_url)
-	html_page = req.content.decode("utf-8").split('\n')
-	i = 0
-	results = {}
-	while i < len(html_page):
-		if re.match(series_found_regex,html_page[i]):
-			anime_id = get_id_from_string(html_page[i],series_found_regex)
-			title = get_title_from_string(html_page[i])
-			results[title] = anime_id
-		i = i + 1
-	return results
-
 class episode_list(object):
 	def __init__(self, anime_id):
 		query_url = "https://shinden.pl/series/"+anime_id+"/episodes"
@@ -216,7 +191,7 @@ class mirror_list(object):
 		for item in soup.findAll('section', {"class": re.compile("^.*$")}):
 			if 'box' in item.attrs['class'] and 'episode-player-list' in item.attrs['class']:
 				episode_tags.append(item)
-		if len(episode_tags) == 0 or len(episode_tags) > 1:
+		if len(episode_tags) != 1:
 			raise ValueError("Incorrect number of sections with classes box and episode-player-list: "+len(episode_tags))
 		skip_entry = True
 		self.vendor = []
@@ -558,45 +533,145 @@ class shinden_direct_url(object):
 		self.url = self.__get_url(browser, mirrors, mirror_number)
 		print('Received URL: '+self.url)
 
+class search_result(object):
+	def __init__(self, title, type_of_broadcast, episode_count, id_of_anime):
+		self.title = title
+		self.type_of_broadcast = type_of_broadcast
+		self.episode_count = episode_count
+		self.id_of_anime = id_of_anime
+
+class shinden_ratings(object):
+	def __init__(self, html_soup):
+		dlugi_tekst = re.sub("\n", "", html_soup.findAll('li', attrs={'class', 'ratings-col'})[0].text)
+		if dlugi_tekst != '':
+			worek = re.sub(":", "", re.sub(",", ".", dlugi_tekst)).split(" ")
+			self.overall = worek[1]
+			self.storyline = worek[3]
+			self.graphics = worek[5]
+			self.music = worek[7]
+			self.characters = worek[9]
+		else:
+# Tutaj trafiają animce które nie mają jeszcze ocen bo np. zostały zapowiedziane ale jeszcze ich nie ma na shindenie
+			self.overall = 'Brak'
+			self.storyline = 'Brak'
+			self.graphics = 'Brak'
+			self.music = 'Brak'
+			self.characters = 'Brak'
+			self.top = 'Brak'
+		self.top = re.sub(",", ".", html_soup.findAll('li', attrs={'class', 'rate-top'})[0].text)
+	
+	def list_all(self):
+		print('Ogółem: '+self.overall)
+		print('Fabuła: '+self.storyline)
+		print('Grafika: '+self.graphics)
+		print('Muzyka: '+self.music)
+		print('Postacie: '+self.characters)
+		print('TOP: '+self.top)
+
+class search_result_class(object):
+	def __init__(self, html_soup):
+		self.id = re.sub("^.*/", "", re.sub("-.*$", "", str(html_soup.findAll('h3')[0])))
+		self.title = re.sub("^ *", "", html_soup.findAll('h3')[0].text)
+		self.broadcast = html_soup.findAll('li', attrs={'class', 'title-kind-col'})[0].text
+		self.episode_count = int(re.sub(" *$", "", html_soup.findAll('li', attrs={'class', 'episodes-col'})[0].text))
+		self.ratings = shinden_ratings(html_soup)
+		self.tags = re.sub("\n$", "", re.sub("^\n", "", html_soup.findAll('ul', attrs={'class', 'tags'})[0].text)).split("\n")
+		print(self.id)
+		print(self.title)
+		print(self.broadcast)
+		print(str(self.episode_count))
+		self.ratings.list_all()
+		print(self.tags)
+
+class sibnet_search(object):
+	def __make_string_url_friendly(self, input_text):
+		return re.sub(" ", "+", input_text)
+	
+	def __init__(self, search_term):
+		url = 'https://shinden.pl/series?search='+self.__make_string_url_friendly(search_term)
+		session = requests
+		response = session.get(url)
+		soup = bs4.BeautifulSoup(response.text, "html.parser")
+		crazy_table = soup.findAll('section', attrs={'class', 'title-table'})[0].findAll('article')[0]
+		anime_html_list = crazy_table.findAll('ul', attrs={'class', 'div-row'})
+		self.count = len(anime_html_list)
+		self.result = []
+		count = 0
+		while count < self.count:
+			print("count: "+str(count))
+			self.result.append(search_result_class(anime_html_list[count]))
+			count = count + 1
+	
+	def list_search_results(self):
+		count = 0
+		if self.count == 0:
+			return
+		print("Lp.\tTytuł\tOdcinki\tEmisja\tOceny\tTOP")
+		while count < self.count:
+			print(str(count+1)+": "+self.result[count].title+"\t"+str(self.result[count].episode_count)+"\t"+self.result[count].broadcast+"\t"+self.result[count].ratings.top)
+			count = count + 1
+
+
 debug_mode = False
 graphic_interface = False
 
-#jjba_stardust = "11758"
-jjba_stardust = "11758"
-
-episodes = episode_list(jjba_stardust)
+print('Starting browser engine')
 browser = browser_engine()
+print('Browser engine successfully initialized')
 
 while True:
-	if graphic_interface == False:
-		while True:
-			max_episode = len(episodes.id)
-			print('Just so you know, you can quit by selecting 0 in the episode choice')
-			episode_number = int(input("Enter episode number (1-"+str(max_episode)+"): "))
-			if episode_number > max_episode or episode_number < 1:
-				if episode_number == 0:
-					browser.quit()
-					quit()
-				print('Episode number outside of given range')
-			else:
-				episode_number = episode_number - 1
-				break
+# W tej pętli wybieramy anime z wyników na shindenie
+	print('What would you like to watch? If nothing, just enter nothing')
+	search_term = input("Enter search term: ")
+	if search_term == "":
+		break
+	search_results = sibnet_search(search_term)
+	search_results.list_search_results()
+# Wybieramy anime z wyników wyszukiwania
+	anime_id = ""
+	while True:
+		print("If you select 0, the program will exit safely")
+		selected_anime = int(input("Select anime from above list by Lp. number (1-"+str(search_results.count)+"): "))
+		if selected_anime < 1 or selected_anime+1 > search_results.count:
+			if selected_anime == 0:
+				browser.quit()
+				quit()
+		else:
+			anime_id = search_results.result[selected_anime-1].id
+			break
+	episodes = episode_list(anime_id)
+	while True:
+# W tej pętli wybieramy odcinek
+		if graphic_interface == False:
+			while True:
+				max_episode = len(episodes.id)
+				print('Just so you know, you can quit by selecting 0 in the episode choice')
+				episode_number = int(input("Enter episode number (1-"+str(max_episode)+"): "))
+				if episode_number > max_episode or episode_number < 1:
+					if episode_number == 0:
+						browser.quit()
+						quit()
+					print('Episode number outside of given range')
+				else:
+					episode_number = episode_number - 1
+					break
 
-	mirrors = mirror_list(jjba_stardust,episodes.id[episode_number],browser)
+		mirrors = mirror_list(anime_id,episodes.id[episode_number],browser)
+# Przejebane że nie wiem jak sie zabrać za rozdzielenie tego na gui i cli xD
+		if graphic_interface == False:
+# W tej pętli wybieramy mirror odcinka
+			while True:
+				max_mirror = len(mirrors.vendor)
+				mirror_number = int(input("Enter mirror number (1-"+str(max_mirror)+"): "))
+				if mirror_number > max_mirror or mirror_number < 1:
+					print('Mirror number outside of given range')
+				else:
+					mirror_number = mirror_number - 1
+					break
 
-	if graphic_interface == False:
-		while True:
-			max_mirror = len(mirrors.vendor)
-			mirror_number = int(input("Enter mirror number (1-"+str(max_mirror)+"): "))
-			if mirror_number > max_mirror or mirror_number < 1:
-				print('Mirror number outside of given range')
-			else:
-				mirror_number = mirror_number - 1
-				break
-
-	try:
-		file_url = shinden_direct_url(browser,mirrors,mirror_number)
-	except MirrorVendorUnsupported:
-		print('Unsupported mirror vendor: '+mirrors.vendor[mirror_number])
+		try:
+			file_url = shinden_direct_url(browser,mirrors,mirror_number)
+		except MirrorVendorUnsupported:
+			print('Unsupported mirror vendor: '+mirrors.vendor[mirror_number])
 
 browser.quit()
