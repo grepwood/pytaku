@@ -90,7 +90,7 @@ def detect_browsers():
 	supported_browsers = []
 	supported_browsers.append(browser_type('Mozilla Firefox', 'firefox', 'firefox.exe', 'geckodriver', 'geckodriver.exe'))
 	supported_browsers.append(browser_type('Google Chrome', 'google-chrome-stable', 'chrome.exe', 'chromedriver', 'chromedriver.exe'))
-	supported_browsers.append(browser_type('Microsoft Edge', 'msedge', 'msedge.exe', 'msedgedriver', 'msedgedriver.exe'))
+#	supported_browsers.append(browser_type('Microsoft Edge', 'msedge', 'msedge.exe', 'msedgedriver', 'msedgedriver.exe'))
 	counter = 0
 	candidates = []
 	while counter < len(supported_browsers):
