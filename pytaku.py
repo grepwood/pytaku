@@ -16,11 +16,12 @@ import sys
 
 class episode_list(object):
 	def __init__(self, anime_id):
-		query_url = "https://shinden.pl/series/"+anime_id+"/episodes"
+		query_url = "https://shinden.pl/series/"+anime_id+"/all-episodes"
 		req = requests.get(query_url)
 		html_page = req.content
 		soup = bs4.BeautifulSoup(html_page, "html.parser")
 # For whatever reason, reversing big_tag_matrix doesn't work
+
 		big_tag_matrix = soup.findAll('tbody', attrs={'class','list-episode-checkboxes'})[0].findAll('td')
 		self.episode_count = int(len(big_tag_matrix)/6)
 		self.title = []
@@ -148,6 +149,7 @@ class browser_engine(object):
 						self.click_invisible_bullshit()
 					except selenium.common.exceptions.StaleElementReferenceException:
 						print('bullshit element is stale, it is ok to accept cookies')
+					self.scroll_to_element('//html/body/div[14]')
 					self.driver.find_elements_by_xpath('//html/body/div[14]')[0].click()
 			self.accepted_cookies = True
 	
@@ -215,14 +217,18 @@ class mirror_list(object):
 					print('adding '+al.findAll('span')[1].text)
 					self.audio_language.append(al.findAll('span')[1].text)
 				for sl in item.findAll('td',{'class':'ep-pl-slang'}):
-					print('adding '+sl.findAll('span')[1].text)
-					self.sub_language.append(sl.findAll('span')[1].text)
+					subtitle_language_html = sl.findAll('span')
+					if len(subtitle_language_html) < 2:
+						subtitle_language = "Brak"
+					else:
+						subtitle_language = subtitle_language_html[1].text
+					print('adding '+subtitle_language)
+					self.sub_language.append(subtitle_language)
 				for da in item.findAll('td',{'class':'ep-online-added'}):
 					print('adding '+da.text)
 					self.date_added.append(da.text)
 				for xpath in item.findAll('a'):
-					print('adding '+xpath.attrs['id'])
-					self.xpath.append(xpath.attrs['id'])
+					self.xpath.append(item.findAll('a', {'class', 'change-video-player'})[0].attrs['id'])
 
 class sibnet_handler(object):
 	def __goto_sibnet(self, browser, sibnet_primary_url):
@@ -632,7 +638,7 @@ while True:
 	while True:
 		print("If you select 0, the program will exit safely")
 		selected_anime = int(input("Select anime from above list by Lp. number (1-"+str(search_results.count)+"): "))
-		if selected_anime < 1 or selected_anime+1 > search_results.count:
+		if selected_anime < 1 or selected_anime > search_results.count:
 			if selected_anime == 0:
 				browser.quit()
 				quit()
