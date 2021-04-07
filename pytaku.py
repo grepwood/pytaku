@@ -26,9 +26,6 @@ class episode_list(object):
 		big_tag_matrix = soup.findAll('tbody', attrs={'class','list-episode-checkboxes'})[0].findAll('td')
 		self.episode_count = int(len(big_tag_matrix)/6)
 		self.title = []
-# These parameters require selenium. We cannot afford this kind of overhaul right now.
-#		self.available = []
-#		self.languages = []
 		self.id = []
 		count = 0
 		self.as_a_table = PrettyTable()
@@ -348,7 +345,7 @@ class dood_handler(object):
 		return soup.findAll('video')[0].attrs['src']
 	
 	def __init__(self, browser, dood_url):
-		self.__goto_streamtape(self, browser, dood_url)
+		self.__goto_streamtape(browser, dood_url)
 		self.url = self.__get_url(browser)
 
 class gd_apicode_cc_handler(object):
@@ -367,15 +364,22 @@ class gd_apicode_cc_handler(object):
 		browser.wait_for_document_to_finish_loading()
 		return browser.driver.find_elements_by_xpath('//*[@id="txtDl"]')[0].get_attribute('innerHTML')
 	
-	def __get_url_from_menu(self, browser, intermediate_url):
+	def __get_url_from_menu(self, browser, intermediate_url, mirror_vendor):
 		browser.driver.get(intermediate_url)
 		browser.wait_for_document_to_finish_loading()
-		return browser.driver.find_elements_by_xpath('//html/body/div[1]/div[3]/div/a[3]')[0].get_attribute('href')
+		result = ""
+		if mirror_vendor in ['Vidlox', 'Vidoza']:
+			result = browser.driver.find_elements_by_xpath('//html/body/div[1]/div[3]/div/a[2]')[0].get_attribute('href')
+		elif mirror_vendor == 'Streamsb':
+			result = browser.driver.find_elements_by_xpath('//html/body/div[1]/div[3]/div/a[3]')[0].get_attribute('href')
+		else:
+			raise MirrorVendorUnsupported
+		return result
 	
 	def __init__(self, browser, player_url, mirror_vendor):
 		self.__goto_gd_apicode_cc(browser)
 		intermediate_url = self.__get_url_from_form(browser, player_url, mirror_vendor)
-		self.url = self.__get_url_from_menu(browser, intermediate_url)
+		self.url = self.__get_url_from_menu(browser, intermediate_url, mirror_vendor)
 
 class streamsb_handler(object):
 	def __init__(self, browser, player_url, mirror_vendor):
@@ -402,6 +406,26 @@ class mp4upload_handler(object):
 class MirrorVendorUnsupported(Exception):
 	"""Raised when mirror vendor is unsupported. Let us know by filing an issue."""
 	pass
+
+class DeadMirror(Exception):
+	"""Raised when mirror is listed, but turns out to be dead."""
+	pass
+
+class cloud9_handler(object):
+	def __init__(self, browser, player_url):
+		self.__cloud9_404 = '<html><head><title>404 Not Found</title></head>\n<body bgcolor="white">\n<center><h1>404 Not Found</h1></center>\n<hr><center>nginx</center>\n\n\n</body></html>'
+		browser.driver.get(player_url)
+		browser.wait_for_document_to_finish_loading()
+		if browser.driver.page_source == self.__cloud9_404: raise DeadMirror
+		else: return ""
+
+class vidlox_handler(object):
+	def __init__(self, browser, player_url):
+		self.url = gd_apicode_cc_handler(browser, player_url, 'Vidlox').url
+
+class vidoza_handler(object):
+	def __init__(self, browser, player_url, mirror_vendor):
+		self.url = gd_apicode_cc_handler(browser, player_url, mirror_vendor).url
 
 class shinden_direct_url(object):
 	def __get_player_html(self, browser, mirrors, selected_mirror):
@@ -434,7 +458,7 @@ class shinden_direct_url(object):
 					player_url = 'https://video.sibnet.ru/shell.php?videoid='+re.sub("^.*=","",base_referant)
 				elif mirrors.vendor[selected_mirror] == 'Mega':
 					player_url = "https://mega.co.nz/#!"+base_referant.split('#!')[1]
-				elif mirrors.vendor[selected_mirror] in ['Cda', 'Mp4upload']:
+				elif mirrors.vendor[selected_mirror] in ['Cda', 'Mp4upload', 'Vidloxtv']:
 					player_url = re.sub('^//','https://',base_referant)
 				else:
 					player_url = base_referant
@@ -448,7 +472,6 @@ class shinden_direct_url(object):
 	
 	def __get_url(self, browser, mirrors, selected_mirror):
 		if not mirrors.vendor[selected_mirror] in self.__compatible_mirror_types:
-			print('Unsupported mirror of type '+mirrors.vendor[selected_mirror])
 			raise MirrorVendorUnsupported
 		player_url = self.__get_player_url(browser, mirrors, selected_mirror)
 		shinden_url = browser.driver.current_url
@@ -530,6 +553,28 @@ class shinden_direct_url(object):
 			self.referer = ""
 			self.user_agent = ""
 			self.raw_data = 'op=download2&id=ww8lzr8l1erp&rand=&referer=https%3A%2F%2Fwww.mp4upload.com%2Fembed-ww8lzr8l1erp.html&method_free=+&method_premium='
+		elif mirrors.vendor[selected_mirror] == 'Vidloxtv':
+			self.compatible_with_watchtogether = False
+			self.download_possible = True
+			self.requires_referer = False
+			self.requires_redirect = False
+			self.requires_browser_identity = False
+			self.requires_raw_data = False
+			result = vidlox_handler(browser, player_url).url
+			self.referer = ""
+			self.user_agent = ""
+			self.raw_data = ""
+		elif mirrors.vendor[selected_mirror] == 'Vidoza':
+			self.compatible_with_watchtogether = False
+			self.download_possible = True
+			self.requires_referer = False
+			self.requires_redirect = False
+			self.requires_browser_identity = False
+			self.requires_raw_data = False
+			result = vidoza_handler(browser, player_url, mirrors.vendor[selected_mirror]).url
+			self.referer = ""
+			self.user_agent = ""
+			self.raw_data = ""
 		browser.driver.get(shinden_url)
 		browser.wait_for_document_to_finish_loading()
 		return result
@@ -539,7 +584,7 @@ class shinden_direct_url(object):
 		self.download_possible = False
 		self.requires_referer = False
 		self.requires_browser_identity = False
-		self.__compatible_mirror_types = ['Sibnet', 'Mega', 'Streamtape', 'Dood', 'Streamsb', 'Cda', 'Mp4upload']
+		self.__compatible_mirror_types = ['Sibnet', 'Mega', 'Streamtape', 'Dood', 'Streamsb', 'Cda', 'Mp4upload', 'Vidloxtv', 'Vidoza']
 		self.url = self.__get_url(browser, mirrors, mirror_number)
 		print('Received URL: '+self.url)
 
@@ -611,74 +656,75 @@ class sibnet_search(object):
 	def list_search_results(self):
 		print(self.as_a_table)
 
+def search_for_anime():
+	print('What would you like to watch? If nothing, just enter nothing')
+	search_term = input("Enter search term: ")
+	if search_term == "":
+		quit_safely()
+	search_results = sibnet_search(search_term)
+	search_results.list_search_results()
+	return search_results
+
+def quit_safely():
+	global browser
+	browser.quit()
+	quit()
+
+def retrieve_anime_id_from_selection(search_results):
+	while True:
+		print('Select 0 to quit safely')
+		selected_anime = int(input("Select anime from above list (1-"+str(search_results.count)+"): "))
+		if selected_anime < 1 or selected_anime > search_results.count:
+			if selected_anime == 0:
+				quit_safely()
+		else:
+			selected_anime -= 1
+			if search_results.result[selected_anime].episode_count != 0:
+				return search_results.result[selected_anime].id
+			else:
+				print('This anime has no episodes. Choose something else.')
+
+def select_episode(episodes):
+	while True:
+		max_episode = len(episodes.id)
+		print('Select 0 to quit safely')
+		episode_number = int(input("Enter episode number (1-"+str(max_episode)+"): "))
+		if episode_number > max_episode or episode_number < 1:
+			if episode_number == 0:
+				quit_safely()
+			print('Episode number outside of given range')
+		else:
+			return episode_number - 1
+
+def select_mirror(mirrors):
+	while True:
+		max_mirror = len(mirrors.vendor)
+		print('Select 0 to quit safely')
+		mirror_number = int(input("Enter mirror number (1-"+str(max_mirror)+"): "))
+		if mirror_number > max_mirror or mirror_number < 1:
+			if mirror_number == 0:
+				quit_safely()
+			print('Mirror number outside of given range')
+		else:
+			return mirror_number - 1
+
 debug_mode = False
-graphic_interface = False
 
 print('Starting browser engine')
 browser = browser_engine()
 print('Browser engine successfully initialized')
-
 while True:
-# W tej pętli wybieramy anime z wyników na shindenie
-	print('What would you like to watch? If nothing, just enter nothing')
-	search_term = input("Enter search term: ")
-	if search_term == "":
-		break
-	search_results = sibnet_search(search_term)
-	search_results.list_search_results()
-# Wybieramy anime z wyników wyszukiwania
-	anime_id = ""
-	while True:
-		print("If you select 0, the program will exit safely")
-		selected_anime = int(input("Select anime from above list by Lp. number (1-"+str(search_results.count)+"): "))
-		if selected_anime < 1 or selected_anime > search_results.count:
-			if selected_anime == 0:
-				browser.quit()
-				quit()
-		else:
-			selected_anime -= 1
-			if search_results.result[selected_anime].episode_count != 0:
-				anime_id = search_results.result[selected_anime].id
-				break
-			else:
-				print('This anime has no episodes. Choose something else.')
+	search_results = search_for_anime()
+	anime_id = retrieve_anime_id_from_selection(search_results)
 	episodes = episode_list(anime_id)
 	episodes.list_all()
 	while True:
-# W tej pętli wybieramy odcinek
-		if graphic_interface == False:
-			while True:
-				max_episode = len(episodes.id)
-				print('Just so you know, you can quit by selecting 0 in the episode choice')
-				episode_number = int(input("Enter episode number (1-"+str(max_episode)+"): "))
-				if episode_number > max_episode or episode_number < 1:
-					if episode_number == 0:
-						browser.quit()
-						quit()
-					print('Episode number outside of given range')
-				else:
-					episode_number = episode_number - 1
-					break
-
+		episode_number = select_episode(episodes)
 		mirrors = mirror_list(anime_id,episodes.id[episode_number],browser)
-# Przejebane że nie wiem jak sie zabrać za rozdzielenie tego na gui i cli xD
-		if graphic_interface == False:
-# W tej pętli wybieramy mirror odcinka
-			mirrors.list_all()
-			while True:
-				max_mirror = len(mirrors.vendor)
-				mirror_number = int(input("Enter mirror number (1-"+str(max_mirror)+"): "))
-				if mirror_number > max_mirror or mirror_number < 1:
-					if mirror_number == 0:
-						break
-					print('Mirror number outside of given range')
-				else:
-					mirror_number = mirror_number - 1
-					break
-		if mirror_number != 0:
-			try:
-				file_url = shinden_direct_url(browser,mirrors,mirror_number)
-			except MirrorVendorUnsupported:
-				print('Unsupported mirror vendor: '+mirrors.vendor[mirror_number])
-
+		mirrors.list_all()
+		mirror_number = select_mirror(mirrors)
+		try:
+			file_url = shinden_direct_url(browser,mirrors,mirror_number)
+		except MirrorVendorUnsupported:
+			print('Unsupported mirror vendor: '+mirrors.vendor[mirror_number])
 browser.quit()
