@@ -9,6 +9,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 from mega import Mega
 import json
+import time
 import os
 import detect_browsers
 import pdb
@@ -21,7 +22,6 @@ class episode_list(object):
 		html_page = req.content
 		soup = bs4.BeautifulSoup(html_page, "html.parser")
 # For whatever reason, reversing big_tag_matrix doesn't work
-
 		big_tag_matrix = soup.findAll('tbody', attrs={'class','list-episode-checkboxes'})[0].findAll('td')
 		self.episode_count = int(len(big_tag_matrix)/6)
 		self.title = []
@@ -91,9 +91,6 @@ class browser_engine(object):
 		else:
 			raise ValueError("Unsupported browser")
 	
-#	def wait_for_document_to_finish_loading(self):
-#		while True:
-#			if self.driver.execute_script("return document.readyState;") == "complete": break
 	def wait_for_document_to_finish_loading(self):
 		while self.driver.execute_script("return document.readyState;") != "complete": next
 	
@@ -110,10 +107,6 @@ class browser_engine(object):
 		self.click_invisible_bullshit()
 		while not self.driver.find_elements_by_xpath(element)[0].is_displayed():
 			actions.send_keys_to_element(self.driver.find_elements_by_xpath('//html/body')[0], Keys.DOWN).perform()
-#		while True:
-#			if self.driver.find_elements_by_xpath(element)[0].is_displayed() == True: break
-#			else:
-#				actions.send_keys_to_element(self.driver.find_elements_by_xpath('//html/body')[0], Keys.DOWN).perform()
 	
 	def click_invisible_bullshit(self):
 		bullshit_xpath = '//html/body/div[14]'
@@ -155,13 +148,9 @@ class browser_engine(object):
 	
 	def wait_for_countdown(self):
 		while self.driver.find_elements_by_xpath('//*[@id="countdown"]') != []: next
-#		while True:
-#			if self.driver.find_elements_by_xpath('//*[@id="countdown"]') == []: break
 	
 	def wait_for_element_to_appear(self, element):
 		while self.driver.find_elements_by_xpath(element) == []: next
-#		while True:
-#			if self.driver.find_elements_by_xpath(element) != []: break
 	
 	def get_cookie_even_if_it_takes_time(self, cookie_name):
 		cookie_obj = ""
@@ -244,18 +233,20 @@ class sibnet_handler(object):
 		return "https://video.sibnet.ru"+soup.findAll('video')[0].attrs['src']
 	
 	def __skip_bar(self, browser):
-		print('waiting for loader bar to appear')
-		browser.wait_for_element_to_appear('//*[@id="ampr_progress_msg"]')
-		while browser.driver.find_elements_by_xpath('//*[@id="ampr_progress_msg"]') == []: next
-		print('waiting for loader bar to finish')
-		while int(browser.driver.find_elements_by_xpath('//*[@id="ampr_progress_percent"]')[0].get_attribute('innerHTML')) != 100: next
-		print('closing loader bar')
-		while True:
-			try:
-				browser.driver.find_elements_by_xpath('//*[@id="ampr_close"]')[0].click()
-				break
-			except:
-				next
+		time.sleep(5)
+		if len(browser.driver.find_elements_by_xpath('//*[@id="ampr_progress_msg"]')) > 0:
+			browser.wait_for_element_to_appear('//*[@id="ampr_progress_msg"]')
+			print('waiting for loader bar to finish')
+			while int(browser.driver.find_elements_by_xpath('//*[@id="ampr_progress_percent"]')[0].get_attribute('innerHTML')) != 100: next
+			print('closing loader bar')
+			while True:
+				try:
+					browser.driver.find_elements_by_xpath('//*[@id="ampr_close"]')[0].click()
+					break
+				except:
+					next
+		else:
+			print('it appears that loader bar did not appear at all')
 	
 	def __click_until_it_is_ready(self, browser):
 		print('clicking play button')
@@ -263,7 +254,12 @@ class sibnet_handler(object):
 		actions.send_keys_to_element(browser.driver.find_elements_by_xpath('//html/body/div[1]/div/div[6]')[0], Keys.SPACE).perform()
 		self.__skip_bar(browser)
 		print('clicking play button AGAIN')
-		actions.send_keys_to_element(browser.driver.find_elements_by_xpath('//html/body/div[1]/div/div[6]')[0], Keys.SPACE).perform()
+		while True:
+			try:
+				actions.send_keys_to_element(browser.driver.find_elements_by_xpath('//html/body/div[1]/div/div[6]')[0], Keys.SPACE).perform()
+				break
+			except selenium.common.exceptions.WebDriverException:
+				next
 	
 	def __request_dance(self, user_agent, sibnet_primary_url, sibnet_secondary_url):
 		print('setting up request dance to retrieve direct sibnet URL')
@@ -430,7 +426,7 @@ class shinden_direct_url(object):
 					player_url = 'https://video.sibnet.ru/shell.php?videoid='+re.sub("^.*=","",base_referant)
 				elif mirrors.vendor[selected_mirror] == 'Mega':
 					player_url = "https://mega.co.nz/#!"+base_referant.split('#!')[1]
-				elif mirrors.vendor[selected_mirror] == 'Cda' or mirrors.vendor[selected_mirror] == 'Mp4upload':
+				elif mirrors.vendor[selected_mirror] in ['Cda', 'Mp4upload']:
 					player_url = re.sub('^//','https://',base_referant)
 				else:
 					player_url = base_referant
