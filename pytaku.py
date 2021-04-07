@@ -14,6 +14,7 @@ import os
 import detect_browsers
 import pdb
 import sys
+from prettytable import PrettyTable
 
 class episode_list(object):
 	def __init__(self, anime_id):
@@ -30,17 +31,18 @@ class episode_list(object):
 #		self.languages = []
 		self.id = []
 		count = 0
+		self.as_a_table = PrettyTable()
+		self.as_a_table.field_names = ['Numer', 'Tytuł']
 		while count < self.episode_count:
 			episode_id = re.sub('^.*/view/','',big_tag_matrix[(self.episode_count - count - 1)*6+5].findChild('a')['href'])
 			title = big_tag_matrix[(self.episode_count - count - 1)*6+1].get_text(strip=True)
 			self.title.append(title)
 			self.id.append(episode_id)
 			count = count + 1
+			self.as_a_table.add_row([str(count), title])
+	
 	def list_all(self):
-		count = 0
-		while count < self.episode_count:
-			print(str(count+1)+" : "+self.title[count]+" : "+str(self.id[count]))
-			count = count + 1
+		print(self.as_a_table)
 
 class browser_engine(object):
 	def __init__(self):
@@ -192,18 +194,17 @@ class mirror_list(object):
 		self.date_added = []
 		self.xpath = []
 		print('entering result loop')
+		mirror_count = 0
 		for item in episode_tags[0].findAll('tr'):
 			if skip_entry == True:
 				skip_entry = False
 			else:
+				mirror_count += 1
 				for m in item.findAll('td',{'class':'ep-pl-name'}):
-					print('adding '+m.text)
-					self.vendor.append(m.text)
+					self.vendor.append(re.sub("^  \n", "", m.text))
 				for q in item.findAll('td',{'class':'ep-pl-res'}):
-					print('adding '+q.text)
 					self.quality.append(q.text)
 				for al in item.findAll('td',{'class':'ep-pl-alang'}):
-					print('adding '+al.findAll('span')[1].text)
 					self.audio_language.append(al.findAll('span')[1].text)
 				for sl in item.findAll('td',{'class':'ep-pl-slang'}):
 					subtitle_language_html = sl.findAll('span')
@@ -211,13 +212,20 @@ class mirror_list(object):
 						subtitle_language = "Brak"
 					else:
 						subtitle_language = subtitle_language_html[1].text
-					print('adding '+subtitle_language)
 					self.sub_language.append(subtitle_language)
 				for da in item.findAll('td',{'class':'ep-online-added'}):
-					print('adding '+da.text)
 					self.date_added.append(da.text)
 				for xpath in item.findAll('a'):
 					self.xpath.append(item.findAll('a', {'class', 'change-video-player'})[0].attrs['id'])
+		count = 0
+		self.as_a_table = PrettyTable()
+		self.as_a_table.field_names = ['Źródło', 'Jakość', 'Język', 'Napisy', 'Data dodania']
+		while count < mirror_count:
+			self.as_a_table.add_row([self.vendor[count], self.quality[count], self.audio_language[count], self.sub_language[count], self.date_added[count]])
+			count += 1
+	
+	def list_all(self):
+		print(self.as_a_table)
 
 class sibnet_handler(object):
 	def __goto_sibnet(self, browser, sibnet_primary_url):
@@ -578,12 +586,6 @@ class search_result_class(object):
 		self.episode_count = int(re.sub(" *$", "", html_soup.findAll('li', attrs={'class', 'episodes-col'})[0].text))
 		self.ratings = shinden_ratings(html_soup)
 		self.tags = re.sub("\n$", "", re.sub("^\n", "", html_soup.findAll('ul', attrs={'class', 'tags'})[0].text)).split("\n")
-		print(self.id)
-		print(self.title)
-		print(self.broadcast)
-		print(str(self.episode_count))
-		self.ratings.list_all()
-		print(self.tags)
 
 class sibnet_search(object):
 	def __make_string_url_friendly(self, input_text):
@@ -599,20 +601,15 @@ class sibnet_search(object):
 		self.count = len(anime_html_list)
 		self.result = []
 		count = 0
+		self.as_a_table = PrettyTable()
+		self.as_a_table.field_names = ['Numer', 'Tytuł', 'Odcinki', 'Emisja', 'Ogółem', 'Fabuła', 'Grafika', 'Muzyka', 'Postacie', 'TOP', 'Tagi']
 		while count < self.count:
-			print("count: "+str(count))
 			self.result.append(search_result_class(anime_html_list[count]))
+			self.as_a_table.add_row([str(count+1), self.result[count].title, self.result[count].episode_count, self.result[count].broadcast, self.result[count].ratings.overall, self.result[count].ratings.storyline, self.result[count].ratings.graphics, self.result[count].ratings.music, self.result[count].ratings.characters, self.result[count].ratings.top, self.result[count].tags ])
 			count = count + 1
 	
 	def list_search_results(self):
-		count = 0
-		if self.count == 0:
-			return
-		print("Lp.\tTytuł\tOdcinki\tEmisja\tOceny\tTOP")
-		while count < self.count:
-			print(str(count+1)+": "+self.result[count].title+"\t"+str(self.result[count].episode_count)+"\t"+self.result[count].broadcast+"\t"+self.result[count].ratings.top)
-			count = count + 1
-
+		print(self.as_a_table)
 
 debug_mode = False
 graphic_interface = False
@@ -639,9 +636,14 @@ while True:
 				browser.quit()
 				quit()
 		else:
-			anime_id = search_results.result[selected_anime-1].id
-			break
+			selected_anime -= 1
+			if search_results.result[selected_anime].episode_count != 0:
+				anime_id = search_results.result[selected_anime].id
+				break
+			else:
+				print('This anime has no episodes. Choose something else.')
 	episodes = episode_list(anime_id)
+	episodes.list_all()
 	while True:
 # W tej pętli wybieramy odcinek
 		if graphic_interface == False:
@@ -662,18 +664,21 @@ while True:
 # Przejebane że nie wiem jak sie zabrać za rozdzielenie tego na gui i cli xD
 		if graphic_interface == False:
 # W tej pętli wybieramy mirror odcinka
+			mirrors.list_all()
 			while True:
 				max_mirror = len(mirrors.vendor)
 				mirror_number = int(input("Enter mirror number (1-"+str(max_mirror)+"): "))
 				if mirror_number > max_mirror or mirror_number < 1:
+					if mirror_number == 0:
+						break
 					print('Mirror number outside of given range')
 				else:
 					mirror_number = mirror_number - 1
 					break
-
-		try:
-			file_url = shinden_direct_url(browser,mirrors,mirror_number)
-		except MirrorVendorUnsupported:
-			print('Unsupported mirror vendor: '+mirrors.vendor[mirror_number])
+		if mirror_number != 0:
+			try:
+				file_url = shinden_direct_url(browser,mirrors,mirror_number)
+			except MirrorVendorUnsupported:
+				print('Unsupported mirror vendor: '+mirrors.vendor[mirror_number])
 
 browser.quit()

@@ -4,3 +4,4 @@ bs4
 selenium
 mega.py
 json
+prettytable
