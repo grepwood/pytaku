@@ -216,9 +216,9 @@ class mirror_list(object):
 					self.xpath.append(item.findAll('a', {'class', 'change-video-player'})[0].attrs['id'])
 		count = 0
 		self.as_a_table = PrettyTable()
-		self.as_a_table.field_names = ['Źródło', 'Jakość', 'Język', 'Napisy', 'Data dodania']
+		self.as_a_table.field_names = ['Numer', 'Źródło', 'Jakość', 'Język', 'Napisy', 'Data dodania']
 		while count < mirror_count:
-			self.as_a_table.add_row([self.vendor[count], self.quality[count], self.audio_language[count], self.sub_language[count], self.date_added[count]])
+			self.as_a_table.add_row([str(count+1), self.vendor[count], self.quality[count], self.audio_language[count], self.sub_language[count], self.date_added[count]])
 			count += 1
 	
 	def list_all(self):
@@ -285,10 +285,12 @@ class sibnet_handler(object):
 		return result
 	
 	def __init__(self, browser, sibnet_url):
-		self.__goto_sibnet(browser, sibnet_url)
-		sibnet_secondary_url = self.__retrieve_secondary_url(browser)
-		self.__click_until_it_is_ready(browser)
-		self.url = self.__request_dance(browser.user_agent, sibnet_url, sibnet_secondary_url)
+		self.url = []
+		for url in sibnet_url:
+			self.__goto_sibnet(browser, url)
+			sibnet_secondary_url = self.__retrieve_secondary_url(browser)
+			self.__click_until_it_is_ready(browser)
+			self.url.append(self.__request_dance(browser.user_agent, url, sibnet_secondary_url))
 
 class streamtape_handler(object):
 	def __goto_streamtape(self, browser, streamtape_url):
@@ -328,12 +330,14 @@ class streamtape_handler(object):
 		return rq_response.headers['Location']
 	
 	def __init__(self, browser, streamtape_url):
-		self.__goto_streamtape(browser, streamtape_url)
-		self.__click_play(browser)
-		cookies_dict = self.__get_cookies(browser)
-		url_to_obtain_direct_link = self.__get_request_url(browser)
-		rq_headers = { 'User-Agent': browser.user_agent, 'referer': streamtape_url }
-		self.url = self.__get_url(url_to_obtain_direct_link, cookies_dict, rq_headers)
+		self.url = []
+		for url in streamtape_url:
+			self.__goto_streamtape(browser, url)
+			self.__click_play(browser)
+			cookies_dict = self.__get_cookies(browser)
+			url_to_obtain_direct_link = self.__get_request_url(browser)
+			rq_headers = { 'User-Agent': browser.user_agent, 'referer': url }
+			self.url.append(self.__get_url(url_to_obtain_direct_link, cookies_dict, rq_headers))
 
 class dood_handler(object):
 	def __goto_streamtape(self, browser, dood_url):
@@ -345,8 +349,10 @@ class dood_handler(object):
 		return soup.findAll('video')[0].attrs['src']
 	
 	def __init__(self, browser, dood_url):
-		self.__goto_streamtape(browser, dood_url)
-		self.url = self.__get_url(browser)
+		self.url = []
+		for url in player_url:
+			self.__goto_streamtape(browser, dood_url)
+			self.url.append(self.__get_url(browser))
 
 class gd_apicode_cc_handler(object):
 	def __goto_gd_apicode_cc(self, browser):
@@ -383,7 +389,9 @@ class gd_apicode_cc_handler(object):
 
 class streamsb_handler(object):
 	def __init__(self, browser, player_url, mirror_vendor):
-		self.url = gd_apicode_cc_handler(browser, player_url, mirror_vendor).url
+		self.url = []
+		for url in player_url:
+			self.url.append(gd_apicode_cc_handler(browser, url, mirror_vendor).url)
 
 class cda_handler(object):
 	def __goto_cda(self, browser, player_url):
@@ -391,8 +399,10 @@ class cda_handler(object):
 		browser.wait_for_document_to_finish_loading()
 	
 	def __init__(self, browser, player_url):
-		self.__goto_cda(browser, player_url)
-		self.url = browser.driver.find_elements_by_xpath('//html/body/div/div[1]/div/div/div/div/div/div/span[3]/span[1]/span/span[1]/video')[0].get_attribute('src')
+		self.url = []
+		for url in player_url:
+			self.__goto_cda(browser, url)
+			self.url.append(browser.driver.find_elements_by_xpath('//html/body/div/div[1]/div/div/div/div/div/div/span[3]/span[1]/span/span[1]/video')[0].get_attribute('src'))
 
 class mp4upload_handler(object):
 	def __goto_mp4upload(self, browser, player_url):
@@ -400,8 +410,10 @@ class mp4upload_handler(object):
 		browser.wait_for_document_to_finish_loading()
 	
 	def __init__(self, browser, player_url):
-		self.__goto_mp4upload(browser, player_url)
-		self.url = browser.driver.find_elements_by_xpath('//*[@id="player_html5_api"]')[0].get_attribute('src')
+		self.url = []
+		for url in player_url:
+			self.__goto_mp4upload(browser, url)
+			self.url.append(browser.driver.find_elements_by_xpath('//*[@id="player_html5_api"]')[0].get_attribute('src'))
 
 class MirrorVendorUnsupported(Exception):
 	"""Raised when mirror vendor is unsupported. Let us know by filing an issue."""
@@ -413,19 +425,35 @@ class DeadMirror(Exception):
 
 class cloud9_handler(object):
 	def __init__(self, browser, player_url):
-		self.__cloud9_404 = '<html><head><title>404 Not Found</title></head>\n<body bgcolor="white">\n<center><h1>404 Not Found</h1></center>\n<hr><center>nginx</center>\n\n\n</body></html>'
-		browser.driver.get(player_url)
-		browser.wait_for_document_to_finish_loading()
-		if browser.driver.page_source == self.__cloud9_404: raise DeadMirror
-		else: return ""
+		for url in player_url:
+			self.__cloud9_404 = '<html><head><title>404 Not Found</title></head>\n<body bgcolor="white">\n<center><h1>404 Not Found</h1></center>\n<hr><center>nginx</center>\n\n\n</body></html>'
+			browser.driver.get(player_url)
+			browser.wait_for_document_to_finish_loading()
+			if browser.driver.page_source == self.__cloud9_404: raise DeadMirror
+			else:
+				self.url.append("")
 
 class vidlox_handler(object):
 	def __init__(self, browser, player_url):
-		self.url = gd_apicode_cc_handler(browser, player_url, 'Vidlox').url
+		self.url = []
+		for url in player_url:
+			self.url.append(gd_apicode_cc_handler(browser, url, 'Vidlox').url)
 
 class vidoza_handler(object):
 	def __init__(self, browser, player_url, mirror_vendor):
-		self.url = gd_apicode_cc_handler(browser, player_url, mirror_vendor).url
+		self.url = []
+		for url in player_url:
+			self.url.append(gd_apicode_cc_handler(browser, url, mirror_vendor).url)
+
+class facebook_handler(object):
+	def __init__(self, browser, player_url):
+		self.url = []
+		for url in player_url:
+			browser.driver.get(url)
+			browser.wait_for_document_to_finish_loading()
+			page_source = browser.driver.page_source
+			soup = bs4.BeautifulSoup(page_source, "html.parser")
+			self.url.append(soup.findAll('video')[0].attrs['src'])
 
 class shinden_direct_url(object):
 	def __get_player_html(self, browser, mirrors, selected_mirror):
@@ -446,34 +474,36 @@ class shinden_direct_url(object):
 		soup = bs4.BeautifulSoup(page_source,"html.parser")
 		return soup
 	
-	def __get_player_url(self, browser, mirrors, selected_mirror):
-		result = ""
-		player_url = ""
+	def __get_player_url_list(self, browser, mirrors, selected_mirror):
+		player_url_list = []
 		print('retrieving player URL')
-		while player_url == "":
+		while player_url_list == []:
 			soup = self.__get_player_html(browser,mirrors, selected_mirror)
 			try:
-				base_referant = soup.findAll('iframe')[0].attrs['src']
-				if mirrors.vendor[selected_mirror] == 'Sibnet':
-					player_url = 'https://video.sibnet.ru/shell.php?videoid='+re.sub("^.*=","",base_referant)
-				elif mirrors.vendor[selected_mirror] == 'Mega':
-					player_url = "https://mega.co.nz/#!"+base_referant.split('#!')[1]
-				elif mirrors.vendor[selected_mirror] in ['Cda', 'Mp4upload', 'Vidloxtv']:
-					player_url = re.sub('^//','https://',base_referant)
-				else:
-					player_url = base_referant
+				players = soup.findAll('iframe')
+				for player in players:
+					base_referant = player.attrs['src']
+					if mirrors.vendor[selected_mirror] == 'Sibnet':
+						player_url = 'https://video.sibnet.ru/shell.php?videoid='+re.sub("^.*=","",base_referant)
+					elif mirrors.vendor[selected_mirror] == 'Mega':
+						player_url = "https://mega.co.nz/#!"+base_referant.split('#!')[1]
+					elif mirrors.vendor[selected_mirror] in ['Cda', 'Mp4upload', 'Vidloxtv']:
+						player_url = re.sub('^//','https://',base_referant)
+					else:
+						player_url = base_referant
+					player_url_list.append(player_url)
 				break
 			except IndexError:
 				print('error occurred on shinden, retryting')
 #				possible location: /html/body/div[4]/div/article/div[2]/div/div[2]/div
 				browser.driver.refresh()
 				browser.wait_for_document_to_finish_loading()
-		return player_url
+		return player_url_list
 	
 	def __get_url(self, browser, mirrors, selected_mirror):
 		if not mirrors.vendor[selected_mirror] in self.__compatible_mirror_types:
 			raise MirrorVendorUnsupported
-		player_url = self.__get_player_url(browser, mirrors, selected_mirror)
+		player_url = self.__get_player_url_list(browser, mirrors, selected_mirror)
 		shinden_url = browser.driver.current_url
 		result = ""
 		if mirrors.vendor[selected_mirror] == 'Sibnet':
@@ -575,6 +605,17 @@ class shinden_direct_url(object):
 			self.referer = ""
 			self.user_agent = ""
 			self.raw_data = ""
+		elif mirrors.vendor[selected_mirror] == 'Fb':
+			self.compatible_with_watchtogether = False
+			self.download_possible = True
+			self.requires_referer = False
+			self.requires_redirect = False
+			self.requires_browser_identity = False
+			self.requires_raw_data = False
+			result = facebook_handler(browser, player_url).url
+			self.referer = ""
+			self.user_agent = ""
+			self.raw_data = ""
 		browser.driver.get(shinden_url)
 		browser.wait_for_document_to_finish_loading()
 		return result
@@ -584,9 +625,12 @@ class shinden_direct_url(object):
 		self.download_possible = False
 		self.requires_referer = False
 		self.requires_browser_identity = False
-		self.__compatible_mirror_types = ['Sibnet', 'Mega', 'Streamtape', 'Dood', 'Streamsb', 'Cda', 'Mp4upload', 'Vidloxtv', 'Vidoza']
+		self.__compatible_mirror_types = ['Sibnet', 'Mega', 'Streamtape', 'Dood', 'Streamsb', 'Cda', 'Mp4upload', 'Vidloxtv', 'Vidoza', 'Fb']
 		self.url = self.__get_url(browser, mirrors, mirror_number)
-		print('Received URL: '+self.url)
+		count = 0
+		for url in self.url:
+			print('Received URL #'+str(count+1)+': '+self.url[count])
+			count += 1
 
 class search_result(object):
 	def __init__(self, title, type_of_broadcast, episode_count, id_of_anime):
@@ -632,7 +676,7 @@ class search_result_class(object):
 		self.ratings = shinden_ratings(html_soup)
 		self.tags = re.sub("\n$", "", re.sub("^\n", "", html_soup.findAll('ul', attrs={'class', 'tags'})[0].text)).split("\n")
 
-class sibnet_search(object):
+class shinden_search(object):
 	def __make_string_url_friendly(self, input_text):
 		return re.sub(" ", "+", input_text)
 	
@@ -661,7 +705,7 @@ def search_for_anime():
 	search_term = input("Enter search term: ")
 	if search_term == "":
 		quit_safely()
-	search_results = sibnet_search(search_term)
+	search_results = shinden_search(search_term)
 	search_results.list_search_results()
 	return search_results
 
