@@ -99,6 +99,7 @@ def detect_browsers():
 		supported_browsers[counter].test_webdriver()
 		if supported_browsers[counter].errors == 0:
 			candidates.append(supported_browsers[counter].exe)
+#			break
 		counter += 1
 	if len(candidates) == 0:
 		raise ValueError("No supported browser found")
