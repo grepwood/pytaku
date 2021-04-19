@@ -53,8 +53,9 @@ class browser_engine(object):
 			self.profile = webdriver.FirefoxProfile()
 			self.options = webdriver.FirefoxOptions()
 			self.profile.set_preference("intl.accept_languages", "pl")
-			if debug_mode == False:
-				self.options.headless = True
+#			if debug_mode == False:
+#				self.options.headless = True
+			self.options.headless = True
 			self.profile.update_preferences()
 			self.driver = webdriver.Firefox(self.profile,options=self.options)
 			self.user_agent = self.driver.execute_script("return navigator.userAgent;")
@@ -62,8 +63,9 @@ class browser_engine(object):
 			self.profile = webdriver.ChromeProfile()
 			self.options = webdriver.ChromeOptions()
 			self.options.addArguments("-lang=pl")
-			if debug_mode == False:
-				self.options.headless = True
+#			if debug_mode == False:
+#				self.options.headless = True
+			self.options.headless = True
 			self.driver = webdriver.Chrome(self.profile,options=self.options)
 			self.user_agent = re.sub('Headless','',self.driver.execute_script("return navigator.userAgent;"))
 			self.options.addArguments("user-agent="+self.user_agent)
@@ -148,8 +150,11 @@ class browser_engine(object):
 						self.click_invisible_bullshit()
 					except selenium.common.exceptions.StaleElementReferenceException:
 						print('bullshit element is stale, it is ok to accept cookies')
-					self.scroll_to_element('//html/body/div[14]')
-					self.driver.find_elements_by_xpath('//html/body/div[14]')[0].click()
+					try:
+						self.scroll_to_element('//html/body/div[14]')
+						self.driver.find_elements_by_xpath('//html/body/div[14]')[0].click()
+					except selenium.common.exceptions.ElementNotInteractableException:
+						pdb.set_trace()
 			print('Cookies accepted')
 			self.accepted_cookies = True
 	
@@ -929,6 +934,11 @@ class shinden_search(object):
 		print(self.as_a_table)
 
 def search_for_anime():
+	global debug_mode
+	if debug_mode == True:
+		search_results = shinden_search('jojo')
+		search_results.list_search_results()
+		return search_results
 	print('What would you like to watch? If nothing, just enter nothing')
 	search_term = input("Enter search term: ")
 	if search_term == "":
@@ -943,6 +953,9 @@ def quit_safely():
 	quit()
 
 def retrieve_anime_id_from_selection(search_results):
+	global debug_mode
+	if debug_mode == True:
+		return search_results.result[0].id
 	while True:
 		print('Select 0 to quit safely')
 		selected_anime = int(input("Select anime from above list (1-"+str(search_results.count)+"): "))
@@ -957,6 +970,9 @@ def retrieve_anime_id_from_selection(search_results):
 				print('This anime has no episodes. Choose something else.')
 
 def select_episode(episodes):
+	global debug_mode
+	if debug_mode == True:
+		return 0
 	while True:
 		max_episode = len(episodes.id)
 		print('Select 0 to quit safely')
@@ -973,6 +989,9 @@ def judge_mirror(mirror_name):
 	return "Tak" if mirror_name in supported_mirrors else "Nie"
 
 def select_mirror(mirrors):
+	global debug_mode
+	if debug_mode == True:
+		return 0
 	while True:
 		max_mirror = len(mirrors.mirror)
 		print('Select 0 to quit safely')
@@ -980,8 +999,6 @@ def select_mirror(mirrors):
 		if mirror_number > max_mirror or mirror_number < 1:
 			if mirror_number == 0:
 				quit_safely()
-			if mirror_number == -1:
-				judge_mirrors(mirrors.vendor)
 			if mirror_number == -2:
 				return -2
 			else:
@@ -990,6 +1007,7 @@ def select_mirror(mirrors):
 			return mirror_number - 1
 
 debug_mode = False
+extreme_debug_mode = False
 
 print('Starting browser engine')
 browser = browser_engine()
@@ -1009,4 +1027,8 @@ while True:
 				file_url = shinden_direct_url(browser,mirrors.mirror[mirror_number])
 			except MirrorVendorUnsupported:
 				print('Unsupported mirror vendor: '+mirrors.mirror[mirror_number].vendor)
+		if extreme_debug_mode == True:
+			break
+	if extreme_debug_mode == True:
+		break
 browser.quit()

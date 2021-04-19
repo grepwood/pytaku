@@ -3,6 +3,7 @@ import sys
 from selenium import webdriver
 operating_system = sys.platform
 nsa_botnet = ['win32', 'cygwin']
+fast_mode = True
 if operating_system in nsa_botnet:
 	import winreg
 else:
@@ -84,6 +85,7 @@ class browser_type(object):
 
 def detect_browsers():
 	global operating_system
+	global fast_mode
 	browser = ""
 # Browsers are stored in order of developer preference.
 # Firefox will always be superior by virtue of not being a shady botnet.
@@ -99,7 +101,8 @@ def detect_browsers():
 		supported_browsers[counter].test_webdriver()
 		if supported_browsers[counter].errors == 0:
 			candidates.append(supported_browsers[counter].exe)
-#			break
+			if fast_mode == True:
+				break
 		counter += 1
 	if len(candidates) == 0:
 		raise ValueError("No supported browser found")
