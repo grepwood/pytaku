@@ -9,13 +9,15 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 from mega import Mega
 import json
-import time
 import os
 import detect_browsers
 import pdb
 import sys
 from prettytable import PrettyTable
 #import youtube_dl
+
+from mirrors.aparat import aparat_handler
+from mirrors.sibnet import sibnet_handler
 
 class episode_list(object):
 	def __init__(self, anime_id):
@@ -216,74 +218,6 @@ class mirror_list(object):
 	def list_all(self):
 		print(self.as_a_table)
 
-class sibnet_handler(object):
-	def __goto_sibnet(self, browser, sibnet_primary_url):
-		print('going to sibnet')
-		browser.driver.get(sibnet_primary_url)
-		print('waiting for document to finish loading')
-		browser.wait_for_document_to_finish_loading()
-	
-	def __retrieve_secondary_url(self, browser):
-		print('parsing sibnet page')
-		soup = bs4.BeautifulSoup(browser.driver.page_source,"html.parser")
-		print('scooping secondary url')
-		return "https://video.sibnet.ru"+soup.findAll('video')[0].attrs['src']
-	
-	def __skip_bar(self, browser):
-		time.sleep(5)
-		if len(browser.driver.find_elements_by_xpath('//*[@id="ampr_progress_msg"]')) > 0:
-			browser.wait_for_element_to_appear('//*[@id="ampr_progress_msg"]')
-			print('waiting for loader bar to finish')
-			while int(browser.driver.find_elements_by_xpath('//*[@id="ampr_progress_percent"]')[0].get_attribute('innerHTML')) != 100: next
-			print('closing loader bar')
-			while True:
-				try:
-					browser.driver.find_elements_by_xpath('//*[@id="ampr_close"]')[0].click()
-					break
-				except:
-					next
-		else:
-			print('it appears that loader bar did not appear at all')
-	
-	def __click_until_it_is_ready(self, browser):
-		print('clicking play button')
-		actions = ActionChains(browser.driver)
-		actions.send_keys_to_element(browser.driver.find_elements_by_xpath('//html/body/div[1]/div/div[6]')[0], Keys.SPACE).perform()
-		self.__skip_bar(browser)
-		print('clicking play button AGAIN')
-		while True:
-			try:
-				actions.send_keys_to_element(browser.driver.find_elements_by_xpath('//html/body/div[1]/div/div[6]')[0], Keys.SPACE).perform()
-				break
-			except selenium.common.exceptions.WebDriverException:
-				next
-	
-	def __request_dance(self, user_agent, sibnet_primary_url, sibnet_secondary_url):
-		print('setting up request dance to retrieve direct sibnet URL')
-		rq_session = requests
-		rq_headers = { 'User-Agent': user_agent, 'referer': sibnet_primary_url }
-		sibnet_next_url = sibnet_secondary_url
-		rq_response = ""
-		result = ""
-		print('entering request dance')
-		while True:
-			rq_response = rq_session.get(sibnet_next_url, allow_redirects=False, headers=rq_headers)
-			print('received response '+str(rq_response.status_code))
-			if not re.match('^//',rq_response.headers['Location']) and rq_response.status_code == 302:
-				result = rq_response.headers['Location']
-				break
-			else:
-				sibnet_next_url = re.sub('^//','https://',rq_response.headers['Location'])
-		return result
-	
-	def __init__(self, browser, sibnet_url):
-		self.url = []
-		for url in sibnet_url:
-			self.__goto_sibnet(browser, url)
-			sibnet_secondary_url = self.__retrieve_secondary_url(browser)
-			self.__click_until_it_is_ready(browser)
-			self.url.append(self.__request_dance(browser.user_agent, url, sibnet_secondary_url))
-
 class streamtape_handler(object):
 	def __goto_streamtape(self, browser, streamtape_url):
 		browser.driver.get(streamtape_url)
@@ -470,45 +404,6 @@ class vkontakte_handler(object):
 			before_url = re.sub('^.*cache720":"', "", without_newlines)
 			after_url = re.sub('",".*$', "", before_url)
 			self.url.append(re.sub('\\\\/', "/", after_url))
-
-class aparat_handler(object):
-	def __is_mirror_dead(self, player_url):
-		death_indicator = '<html><body style="width:100%;height:100%;padding:0;margin:0;">\r\n<center>\r\n<div style="position: absolute;top:50%;width:100%;text-align:center;font: 15px Verdana;">File is no longer available as it expired or has been deleted.</div>\r\n</center>\r\n\r\n<img src="/images/player_blank.jpg" style="position:absolute;width:100%;height:100%" id="over" onclick="document.getElementById(\'over\').style.display = \'none\';">\r\n\r\n</body></html>'
-		self.__response = self.__session.get(player_url)
-		return self.__response.text == death_indicator
-	
-	def __extract_primary_url(self):
-		soup = bs4.BeautifulSoup(self.__response.text, "html.parser")
-		javascript_mess = soup.findAll('script')[-4]
-		without_newlines = re.sub("\n", "", str(javascript_mess))
-		without_location_definition = re.sub("^.*window.top.location.href = \'", "", without_newlines)
-		without_garbage = re.sub("\'.*$", "", without_location_definition)
-		return without_garbage
-		
-	def __generate_secondary_url(self, primary_url):
-		self.__response = self.__session.get(primary_url)
-		soup = bs4.BeautifulSoup(self.__response.text, "html.parser")
-		parameter_soup = soup.findAll('a')[-5].attrs['onclick']
-		without_beginning_parentheses = re.sub("^.*\('", "", parameter_soup)
-		without_ending_parentheses = re.sub("'\)", "", without_beginning_parentheses)
-		parameters = re.sub("'", "", without_ending_parentheses).split(',')
-		return 'https://wolfstream.tv/dl?op=download_orig&id='+parameters[0]+'&mode='+parameters[1]+'&hash='+parameters[2]
-	
-	def __generate_direct_link(self, secondary_url):
-		self.__response = self.__session.get(secondary_url)
-		soup = bs4.BeautifulSoup(self.__response.text, "html.parser")
-		return soup.findAll('a')[-3].attrs['href']
-	
-	def __init__(self, player_url):
-		self.url = []
-		self.__session = requests
-		for url in player_url:
-			if self.__is_mirror_dead(url) == True:
-				raise DeadMirror
-			primary_url = self.__extract_primary_url()
-			secondary_url = self.__generate_secondary_url(primary_url)
-			final_url = self.__generate_direct_link(secondary_url)
-			self.url.append(final_url)
 
 class dailymotion_handler(object):
 	def __init__(self, player_url):
@@ -1027,6 +922,9 @@ while True:
 				file_url = shinden_direct_url(browser,mirrors.mirror[mirror_number])
 			except MirrorVendorUnsupported:
 				print('Unsupported mirror vendor: '+mirrors.mirror[mirror_number].vendor)
+			except NameError as e:
+				print(e)
+				quit_safely()
 		if extreme_debug_mode == True:
 			break
 	if extreme_debug_mode == True:
