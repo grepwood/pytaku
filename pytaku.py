@@ -3,21 +3,32 @@ import requests
 import re
 import bs4
 import selenium
-from selenium import webdriver
+from browser.engine import browser_engine
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import Select
 from mega import Mega
-import json
-import os
-import detect_browsers
 import pdb
-import sys
 from prettytable import PrettyTable
-#import youtube_dl
+import traceback
 
 from mirrors.aparat import aparat_handler
+from mirrors.cda import cda_handler
+from mirrors.cloud9 import cloud9_handler
+from mirrors.dailymotion import dailymotion_handler
+from mirrors.dood import dood_handler
+from mirrors.facebook import facebook_handler
+from mirrors.mp4upload import mp4upload_handler
 from mirrors.sibnet import sibnet_handler
+from mirrors.streamsb import streamsb_handler
+from mirrors.streamtape import streamtape_handler
+from mirrors.tunepk import tunepk_handler
+from mirrors.youtube import youtube_handler
+from mirrors.yourupload import yourupload_handler
+from mirrors.myviru import myviru_handler
+from mirrors.vidlox import vidlox_handler
+from mirrors.vidoza import vidoza_handler
+from mirrors.vkontakte import vkontakte_handler
+from mirrors.exceptions.dead import DeadMirror
 
 class episode_list(object):
 	def __init__(self, anime_id):
@@ -38,151 +49,11 @@ class episode_list(object):
 			title = big_tag_matrix[(self.episode_count - count - 1)*6+1].get_text(strip=True)
 			self.title.append(title)
 			self.id.append(episode_id)
-			count = count + 1
+			count += 1
 			self.as_a_table.add_row([str(count), title])
 	
 	def list_all(self):
 		print(self.as_a_table)
-
-class browser_engine(object):
-	def __init__(self):
-		self.preferred_browser = detect_browsers.detect_browsers()[0]
-		self.profile = ""
-		self.options = ""
-		self.driver = ""
-		global debug_mode
-		if self.preferred_browser == 'firefox':
-			self.profile = webdriver.FirefoxProfile()
-			self.options = webdriver.FirefoxOptions()
-			self.profile.set_preference("intl.accept_languages", "pl")
-#			if debug_mode == False:
-#				self.options.headless = True
-			self.options.headless = True
-			self.profile.update_preferences()
-			self.driver = webdriver.Firefox(self.profile,options=self.options)
-			self.user_agent = self.driver.execute_script("return navigator.userAgent;")
-		elif self.preferred_browser == 'google-chrome-stable':
-			self.profile = webdriver.ChromeProfile()
-			self.options = webdriver.ChromeOptions()
-			self.options.addArguments("-lang=pl")
-#			if debug_mode == False:
-#				self.options.headless = True
-			self.options.headless = True
-			self.driver = webdriver.Chrome(self.profile,options=self.options)
-			self.user_agent = re.sub('Headless','',self.driver.execute_script("return navigator.userAgent;"))
-			self.options.addArguments("user-agent="+self.user_agent)
-			self.driver.close()
-			self.driver = webdriver.Chrome(self.options)
-		elif self.preferred_browser == 'msedge':
-			raise ValueError("idk how to do this on msedge sorry")
-		else:
-			raise ValueError("Unsupported browser")
-		self.accepted_gdpr = False
-		self.accepted_cookies = False
-	
-	def quit(self):
-		self.driver.quit()
-		self.accepted_gpdr = False
-		self.accepted_cookies = False
-		
-	def start_again(self):
-		if self.preferred_browser == 'firefox':
-			self.driver = webdriver.Firefox(self.profile)
-		elif self.preferred_browser == 'google-chrome-stable':
-			self.driver = webdriver.Chrome(self.profile)
-		elif self.preferred_browser == 'msedge':
-			raise ValueError("idk how to do this on msedge sorry")
-		else:
-			raise ValueError("Unsupported browser")
-	
-	def wait_for_document_to_finish_loading(self):
-		print('Waiting for document to load')
-		while self.driver.execute_script("return document.readyState;") != "complete": next
-		print('Document finished loading')
-	
-	def accept_gdpr(self):
-		if self.accepted_gdpr == False:
-			print('Accepting GDPR')
-			self.wait_for_document_to_finish_loading()
-			self.wait_for_element_to_appear('//html/body/div[16]/div[1]/div[2]/div/div[2]/button[2]')
-			self.driver.find_elements_by_xpath('//html/body/div[16]/div[1]/div[2]/div/div[2]/button[2]')[0].click()
-			print('GDPR accepted')
-			self.accepted_gdpr = True
-	
-	def scroll_to_element(self,element):
-		actions = ActionChains(browser.driver)
-		actions.send_keys_to_element(self.driver.find_elements_by_xpath('//html/body')[0], Keys.HOME).perform()
-		self.click_invisible_bullshit()
-		while not self.driver.find_elements_by_xpath(element)[0].is_displayed():
-			actions.send_keys_to_element(self.driver.find_elements_by_xpath('//html/body')[0], Keys.DOWN).perform()
-	
-	def click_invisible_bullshit(self):
-		bullshit_xpath = '//html/body/div[14]'
-		bullshit_style = 'position: fixed; display: block; width: 100%; height: 100%; inset: 0px; background-color: rgba(0, 0, 0, 0); z-index: 300000;'
-		bullshit_element = self.driver.find_elements_by_xpath(bullshit_xpath)
-		actions = ActionChains(browser.driver)
-		print('clicking invisible bullshit')
-		while True:
-			if bullshit_element != []:
-				print('bullshit could exist')
-				if bullshit_element[0].get_attribute('style') != bullshit_style: break
-				else:
-					print('clicking bullshit')
-					try:
-						actions.send_keys_to_element(self.driver.find_elements_by_xpath('//html/body')[0], Keys.HOME).perform()
-						bullshit_element[0].click()
-					except selenium.common.exceptions.StaleElementReferenceException:
-						print('bullshit disappeared before clicking it')
-						break
-			else:
-				print('bullshit not found by xpath')
-				break
-	
-	def accept_cookies(self):
-		if self.accepted_cookies == False:
-			print('Accepting cookies')
-			self.wait_for_document_to_finish_loading()
-			self.wait_for_element_to_appear('//html/body/div[3]/p/a[1]')
-			while True:
-				try:
-					self.driver.find_elements_by_xpath('//html/body/div[3]/p/a[1]')[0].click()
-					break
-				except selenium.common.exceptions.ElementClickInterceptedException:
-					try:
-						self.click_invisible_bullshit()
-					except selenium.common.exceptions.StaleElementReferenceException:
-						print('bullshit element is stale, it is ok to accept cookies')
-					try:
-						self.scroll_to_element('//html/body/div[14]')
-						self.driver.find_elements_by_xpath('//html/body/div[14]')[0].click()
-					except selenium.common.exceptions.ElementNotInteractableException:
-						pdb.set_trace()
-			print('Cookies accepted')
-			self.accepted_cookies = True
-	
-	def wait_for_countdown(self):
-		while self.driver.find_elements_by_xpath('//*[@id="countdown"]') != []: next
-	
-	def wait_for_element_to_appear(self, element):
-		while self.driver.find_elements_by_xpath(element) == []: next
-	
-	def get_cookie_even_if_it_takes_time(self, cookie_name):
-		cookie_obj = ""
-		while True:
-			cookie_obj = self.driver.get_cookie(cookie_name)
-			if type(cookie_obj) is dict: break
-		return cookie_obj
-	
-	def find_tags_with_multiple_classes(self, type_of_tag, classes):
-		results = []
-		html_soup = bs4.BeautifulSoup(self.driver.page_source,"html.parser")
-		for item in html_soup.findAll(type_of_tag, {'class': re.compile("^.*$")}):
-			classes_found = 0
-			for each_class in classes:
-				classes_found += int(each_class in item.attrs['class'])
-			if classes_found == len(classes):
-				results.append(item)
-		return results
 
 class mirror_object(object):
 	def __init__(self, html_soup):
@@ -218,256 +89,17 @@ class mirror_list(object):
 	def list_all(self):
 		print(self.as_a_table)
 
-class streamtape_handler(object):
-	def __goto_streamtape(self, browser, streamtape_url):
-		browser.driver.get(streamtape_url)
-		browser.wait_for_document_to_finish_loading()
-	
-	def __click_play(self, browser):
-		print('simulate clicking play')
-		actions = ActionChains(browser.driver)
-		actions.send_keys_to_element(browser.driver.find_elements_by_xpath('//html/body/div[2]/div[1]')[0], Keys.ENTER).perform()
-		browser.driver.find_elements_by_xpath('//html/body/div[2]/div[2]/button')[0].click()
-	
-	def __get_cookies(self, browser):
-		cookie_b = browser.get_cookie_even_if_it_takes_time('_b')
-		cookie_cloudflare = browser.get_cookie_even_if_it_takes_time('__cfduid')
-		cookie_ym_d = browser.get_cookie_even_if_it_takes_time('_ym_d')
-		cookie_ym_isad = browser.get_cookie_even_if_it_takes_time('_ym_isad')
-		cookie_ym_uid = browser.get_cookie_even_if_it_takes_time('_ym_uid')
-		return { cookie_b['name']: cookie_b['value'], cookie_cloudflare['name']: cookie_cloudflare['value'], cookie_ym_d['name']: cookie_ym_d['value'], cookie_ym_isad['name']: cookie_ym_isad['value'], cookie_ym_uid['name']: cookie_ym_uid['value'] }
-	
-	def __get_request_url(self, browser):
-		html_hint = browser.driver.find_elements_by_xpath('//html/body/script[6]')[0].get_attribute('innerHTML')
-		without_tabs = re.sub('\\t','',html_hint)
-		without_newlines = re.sub('\\n','',without_tabs)
-		without_code = re.sub(';.*$','',without_newlines)
-		without_code_declarations = re.sub('^.* = ','',without_code)
-		json_data = json.loads(without_code_declarations)
-#		alternate method: media_id = streamtape_url.split('/')[-2]
-		media_id = json_data['id']
-		request_parameters = json_data['cors'].split('/')[-1]
-		return 'https://streamtape.com/get_video?id='+media_id+'&'+request_parameters
-	
-	def __get_url(self, url_to_obtain_direct_link, cookie_dict, rq_headers):
-		rq_session = requests
-		print('requesting URL '+url_to_obtain_direct_link)
-		rq_response = rq_session.get(url_to_obtain_direct_link, allow_redirects=False, cookies=cookie_dict, headers=rq_headers)
-		return rq_response.headers['Location']
-	
-	def __init__(self, browser, streamtape_url):
-		self.url = []
-		for url in streamtape_url:
-			self.__goto_streamtape(browser, url)
-			self.__click_play(browser)
-			cookies_dict = self.__get_cookies(browser)
-			url_to_obtain_direct_link = self.__get_request_url(browser)
-			rq_headers = { 'User-Agent': browser.user_agent, 'referer': url }
-			self.url.append(self.__get_url(url_to_obtain_direct_link, cookies_dict, rq_headers))
-
-class dood_handler(object):
-	def __goto_streamtape(self, browser, dood_url):
-		browser.driver.get(dood_url)
-		browser.wait_for_document_to_finish_loading()
-	
-	def __get_url(self, browser):
-		soup = bs4.BeautifulSoup(browser.driver.page_source,"html.parser")
-		return soup.findAll('video')[0].attrs['src']
-	
-	def __init__(self, browser, dood_url):
-		self.url = []
-		for url in player_url:
-			self.__goto_streamtape(browser, dood_url)
-			self.url.append(self.__get_url(browser))
-
-class gd_apicode_cc_handler(object):
-	def __goto_gd_apicode_cc(self, browser):
-		browser.driver.get('https://gd.apicode.cc')
-		browser.wait_for_document_to_finish_loading()
-	
-	def __get_url_from_form(self, browser, player_url, mirror_vendor):
-		drop = Select(browser.driver.find_elements_by_xpath('//html/body/div[1]/div[1]/div/form/div[1]/div/select')[0])
-		drop.select_by_value(mirror_vendor.lower())
-		browser.driver.find_elements_by_xpath('//*[@id="id"]')[0].send_keys(player_url)
-		browser.wait_for_document_to_finish_loading()
-		browser.driver.find_elements_by_xpath('//*[@id="submit"]')[0].click()
-		browser.wait_for_document_to_finish_loading()
-		browser.driver.find_elements_by_xpath('//*[@id="dl-tab"]')[0].click()
-		browser.wait_for_document_to_finish_loading()
-		return browser.driver.find_elements_by_xpath('//*[@id="txtDl"]')[0].get_attribute('innerHTML')
-	
-	def __get_url_from_menu(self, browser, intermediate_url, mirror_vendor):
-		browser.driver.get(intermediate_url)
-		browser.wait_for_document_to_finish_loading()
-		result = ""
-		if mirror_vendor in ['Vidlox', 'Vidoza']:
-			result = browser.driver.find_elements_by_xpath('//html/body/div[1]/div[3]/div/a[2]')[0].get_attribute('href')
-		elif mirror_vendor == 'Streamsb':
-			result = browser.driver.find_elements_by_xpath('//html/body/div[1]/div[3]/div/a[3]')[0].get_attribute('href')
-		else:
-			raise MirrorVendorUnsupported
-		return result
-	
-	def __init__(self, browser, player_url, mirror_vendor):
-		self.__goto_gd_apicode_cc(browser)
-		intermediate_url = self.__get_url_from_form(browser, player_url, mirror_vendor)
-		self.url = self.__get_url_from_menu(browser, intermediate_url, mirror_vendor)
-
-class streamsb_handler(object):
-	def __init__(self, browser, player_url, mirror_vendor):
-		self.url = []
-		for url in player_url:
-			self.url.append(gd_apicode_cc_handler(browser, url, mirror_vendor).url)
-
-class cda_handler(object):
-	def __goto_cda(self, browser, player_url):
-		browser.driver.get(player_url)
-		browser.wait_for_document_to_finish_loading()
-	
-	def __init__(self, browser, player_url):
-		self.url = []
-		for url in player_url:
-			self.__goto_cda(browser, url)
-			self.url.append(browser.driver.find_elements_by_xpath('//html/body/div/div[1]/div/div/div/div/div/div/span[3]/span[1]/span/span[1]/video')[0].get_attribute('src'))
-
-class mp4upload_handler(object):
-	def __is_mirror_dead(self, player_url):
-		response = self.__session.get(player_url)
-		return response.status_code == 404
-	
-	def __goto_mp4upload(self, browser, player_url):
-		browser.driver.get(player_url)
-		browser.wait_for_document_to_finish_loading()
-	
-	def __init__(self, browser, player_url):
-		self.url = []
-		self.__session = requests
-		for url in player_url:
-			if self.__is_mirror_dead(url) == True:
-				raise DeadMirror
-			self.__goto_mp4upload(browser, url)
-			self.url.append(browser.driver.find_elements_by_xpath('//*[@id="player_html5_api"]')[0].get_attribute('src'))
+	def get_mirror_index_by_name(self, vendor_name):
+		count = 0
+		for item in self.mirror:
+			if self.mirror[count].vendor == vendor_name:
+				return count
+			count += 1
+		return -1
 
 class MirrorVendorUnsupported(Exception):
 	"""Raised when mirror vendor is unsupported. Let us know by filing an issue."""
 	pass
-
-class DeadMirror(Exception):
-	"""Raised when mirror is listed, but turns out to be dead."""
-	pass
-
-class cloud9_handler(object):
-	def __is_mirror_dead(self):
-		response = self.__session.get(player_url)
-		return response.status_code == 404
-	
-	def __init__(self, browser, player_url):
-		self.url = []
-		self.__session = requests
-		for url in player_url:
-			if self.__is_mirror_dead(url) == True:
-				raise DeadMirror
-			browser.driver.get(player_url)
-			browser.wait_for_document_to_finish_loading()
-			self.url.append("")
-
-class vidlox_handler(object):
-	def __init__(self, browser, player_url):
-		self.url = []
-		for url in player_url:
-			self.url.append(gd_apicode_cc_handler(browser, url, 'Vidlox').url)
-
-class vidoza_handler(object):
-	def __init__(self, browser, player_url, mirror_vendor):
-		self.url = []
-		for url in player_url:
-			self.url.append(gd_apicode_cc_handler(browser, url, mirror_vendor).url)
-
-class facebook_handler(object):
-	def __init__(self, browser, player_url):
-		self.url = []
-		for url in player_url:
-			browser.driver.get(url)
-			browser.wait_for_document_to_finish_loading()
-			page_source = browser.driver.page_source
-			soup = bs4.BeautifulSoup(page_source, "html.parser")
-			self.url.append(soup.findAll('video')[0].attrs['src'])
-
-class vkontakte_handler(object):
-	def __init__(self, browser, player_url):
-		self.url = []
-		for url in player_url:
-			browser.driver.get(url)
-			browser.wait_for_document_to_finish_loading()
-			messy_js = browser.driver.find_elements_by_xpath('//html/body/div[7]/script')[0].get_attribute('innerHTML')
-			without_newlines = re.sub("\n", "", messy_js)
-			before_url = re.sub('^.*cache720":"', "", without_newlines)
-			after_url = re.sub('",".*$', "", before_url)
-			self.url.append(re.sub('\\\\/', "/", after_url))
-
-class dailymotion_handler(object):
-	def __init__(self, player_url):
-		self.url = []
-		print('Dailymotion is only available for download through youtube-dl')
-		for url in player_url:
-			self.url.append(url)
-
-class youtube_handler(object):
-	def __init__(self, player_url):
-		self.url = []
-		print('Youtube is only available for download through youtube-dl')
-		for url in player_url:
-			self.url.append(url)
-
-class yourupload_handler(object):
-	def __init__(self, player_url):
-		self.url = []
-		self.referer = []
-		self.__session = requests
-		for url in player_url:
-			self.referer.append(url)
-			self.__response = self.__session.get(url)
-			self.__soup = bs4.BeautifulSoup(self.__response.text, "html.parser")
-			self.url.append(self.__soup.find('meta', {'property': 'og:video'}).attrs['content'])
-
-class myviru_handler(object):
-	def __init__(self, player_url):
-		self.url = []
-		self.cookie = []
-		session = requests
-		for url in player_url:
-			response = session.get(url)
-			soup = bs4.BeautifulSoup(response.text, "html.parser")
-			mess = str(soup.findAll('script')[-2]).split(", ")[0]
-			mess = re.sub("\n", "", mess)
-			mess = re.sub("\r", "", mess)
-			mess = re.sub("^.*v=", "", mess)
-			mess = re.sub("\\\\u0026.*$", "", mess)
-			mess = re.sub("%3a", ":", mess)
-			mess = re.sub("%2f", "/", mess)
-			mess = re.sub("%26", "&", mess)
-			mess = re.sub("%3d", "=", mess)
-			mess = re.sub("%3f", "?", mess)
-			cookie_dict = {'UniversalUserID': response.cookies.get_dict()['UniversalUserID']}
-			response = session.get(mess, allow_redirects=False, cookies=cookie_dict)
-			self.url.append(response.headers['Location'])
-			self.cookie.append(cookie_dict)
-
-class tunepk_handles(object):
-	def __is_mirror_dead(self, browser, player_url):
-		browser.driver.get(player_url)
-		browser.wait_for_document_to_finish_loading()
-		possible_death_soup = browser.find_tags_with_multiple_classes('p', ['subheading', 'mb-5'])
-		if len(possible_death_soup) != 0:
-			if possible_death_soup[0].text == 'Unable to find video':
-				raise DeadMirror
-	
-	def __init__(self, browser, player_url):
-		self.url = []
-		for url in player_url:
-			if self.__is_mirror_dead(browser, url):
-				raise DeadMirror
-			self.url.append(url)
 
 class shinden_direct_url(object):
 	def __get_player_html(self, browser, mirror):
@@ -537,7 +169,7 @@ class shinden_direct_url(object):
 			self.requires_browser_identity = False
 			self.requires_raw_data = False
 			self.requires_cookie = False
-			result = sibnet_handler(browser, player_url).url
+			result = sibnet_handler(browser.user_agent, player_url).url
 			self.referer = ""
 			self.user_agent = ""
 			self.raw_data = ""
@@ -645,7 +277,7 @@ class shinden_direct_url(object):
 			self.requires_browser_identity = False
 			self.requires_raw_data = False
 			self.requires_cookie = False
-			result = facebook_handler(browser, player_url).url
+			result = facebook_handler(player_url).url
 			self.referer = ""
 			self.user_agent = ""
 			self.raw_data = ""
@@ -722,7 +354,6 @@ class shinden_direct_url(object):
 		self.requires_browser_identity = False
 		global supported_mirrors
 		self.__compatible_mirror_types = supported_mirrors
-#		self.__compatible_mirror_types = ['Sibnet', 'Mega', 'Streamtape', 'Dood', 'Streamsb', 'Cda', 'Mp4upload', 'Vidloxtv', 'Vidoza', 'Fb', 'Vk', 'Aparat', 'Myviru']
 		try:
 			self.url = self.__get_url(browser, mirror)
 		except DeadMirror:
@@ -831,7 +462,7 @@ class shinden_search(object):
 def search_for_anime():
 	global debug_mode
 	if debug_mode == True:
-		search_results = shinden_search('jojo')
+		search_results = shinden_search('JoJo no Kimyou na Bouken: Stardust Crusaders - Egypt-hen')
 		search_results.list_search_results()
 		return search_results
 	print('What would you like to watch? If nothing, just enter nothing')
@@ -886,7 +517,7 @@ def judge_mirror(mirror_name):
 def select_mirror(mirrors):
 	global debug_mode
 	if debug_mode == True:
-		return 0
+		return mirrors.get_mirror_index_by_name('Cda')
 	while True:
 		max_mirror = len(mirrors.mirror)
 		print('Select 0 to quit safely')
@@ -894,7 +525,7 @@ def select_mirror(mirrors):
 		if mirror_number > max_mirror or mirror_number < 1:
 			if mirror_number == 0:
 				quit_safely()
-			if mirror_number == -2:
+			elif mirror_number == -2:
 				return -2
 			else:
 				print('Mirror number outside of given range')
@@ -905,7 +536,7 @@ debug_mode = False
 extreme_debug_mode = False
 
 print('Starting browser engine')
-browser = browser_engine()
+browser = browser_engine(debug_mode=False, fast_mode=True)
 print('Browser engine successfully initialized')
 while True:
 	search_results = search_for_anime()
@@ -922,8 +553,8 @@ while True:
 				file_url = shinden_direct_url(browser,mirrors.mirror[mirror_number])
 			except MirrorVendorUnsupported:
 				print('Unsupported mirror vendor: '+mirrors.mirror[mirror_number].vendor)
-			except NameError as e:
-				print(e)
+			except:
+				traceback.print_exc()
 				quit_safely()
 		if extreme_debug_mode == True:
 			break
