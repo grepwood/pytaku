@@ -15,6 +15,7 @@ import detect_browsers
 import pdb
 import sys
 from prettytable import PrettyTable
+import traceback
 #import youtube_dl
 
 class episode_list(object):
@@ -1019,7 +1020,12 @@ while True:
 	episodes.list_all()
 	while True:
 		episode_number = select_episode(episodes)
-		mirrors = mirror_list(anime_id,episodes.id[episode_number],browser)
+		mirrors = ""
+		try:
+			mirrors = mirror_list(anime_id,episodes.id[episode_number],browser)
+		except:
+			traceback.print_exc()
+			quit_safely()
 		mirrors.list_all()
 		mirror_number = select_mirror(mirrors)
 		if mirror_number != -2:
@@ -1027,6 +1033,9 @@ while True:
 				file_url = shinden_direct_url(browser,mirrors.mirror[mirror_number])
 			except MirrorVendorUnsupported:
 				print('Unsupported mirror vendor: '+mirrors.mirror[mirror_number].vendor)
+			except:
+				traceback.print_exc()
+				quit_safely()
 		if extreme_debug_mode == True:
 			break
 	if extreme_debug_mode == True:
