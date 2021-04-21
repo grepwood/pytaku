@@ -52,7 +52,6 @@ class shinden_search(object):
 				self.__detect_shinden_downtime_from_soup(soup)
 			except ShindenDowntime:
 				print('Shinden is down. Nothing we can do about it. Try again later.')
-				quit_safely()
 		anime_html_list = crazy_table.findAll('ul', attrs={'class', 'div-row'})
 		self.count = len(anime_html_list)
 		self.result = []

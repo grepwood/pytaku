@@ -25,8 +25,11 @@ class shinden_master_class(object):
 		print('What would you like to watch? If nothing, just enter nothing')
 		search_term = input("Enter search term: ")
 		if search_term == "":
-			quit_safely()
-		search_results = shinden_search(search_term)
+			self.quit_safely()
+		try:
+			search_results = shinden_search(search_term)
+		except:
+			self.quit_safely()
 		search_results.list_search_results()
 		return search_results
 
