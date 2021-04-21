@@ -5,8 +5,8 @@ from shinden.master import shinden_master_class
 
 debug_mode = False
 test_mode = False
-shinden = shinden_master_class(debug_mode=debug_mode, fast_mode=True, test_mode=test_mode)
 try:
+	shinden = shinden_master_class(debug_mode=debug_mode, fast_mode=True, test_mode=test_mode)
 	while True:
 		shinden.search_for_anime()
 		shinden.select_anime()
@@ -22,4 +22,7 @@ except SystemExit:
 	quit()
 except:
 	traceback.print_exc()
-shinden.browser.quit()
+try:
+	shinden.browser.quit()
+except NameError:
+	pass
