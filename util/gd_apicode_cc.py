@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from selenium.webdriver.support.ui import Select
+from mirrors.exceptions.unsupported import MirrorVendorUnsupported
 
 class gd_apicode_cc_handler(object):
 	def __goto_gd_apicode_cc(self, browser):

@@ -4,6 +4,7 @@ from browser.engine import browser_engine
 from shinden.search import shinden_search
 from shinden.episodes import episode_list
 from shinden.mirrors import mirror_list
+from shinden.scraper import direct_url
 
 class shinden_master_class(object):
 	def quit_safely(self):
@@ -73,3 +74,5 @@ class shinden_master_class(object):
 		self.selected_mirror = result
 		self.mirror_to_scrape = self.mirrors.mirror[self.selected_mirror]
 		
+	def get_direct_url(self):
+		self.direct_url = direct_url(self.browser, self.mirror_to_scrape, self.mirrors.supported_mirrors)
