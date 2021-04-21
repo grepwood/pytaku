@@ -12,6 +12,7 @@ from selenium.webdriver.support.ui import Select
 
 class browser_engine(object):
 	def __init__(self, debug_mode=False, fast_mode=True):
+		print('Starting browser engine')
 		self.preferred_browser = detect_browsers.detect_browsers(fast_mode=fast_mode)[0]
 		self.profile = ""
 		self.options = ""
@@ -25,21 +26,21 @@ class browser_engine(object):
 			self.driver = webdriver.Firefox(self.profile,options=self.options)
 			self.user_agent = self.driver.execute_script("return navigator.userAgent;")
 		elif self.preferred_browser == 'google-chrome-stable':
-			self.profile = webdriver.ChromeProfile()
 			self.options = webdriver.ChromeOptions()
-			self.options.addArguments("-lang=pl")
+			self.options.add_argument("-lang=pl")
 			self.options.headless = not debug_mode
-			self.driver = webdriver.Chrome(self.profile,options=self.options)
+			self.driver = webdriver.Chrome(options=self.options)
 			self.user_agent = re.sub('Headless','',self.driver.execute_script("return navigator.userAgent;"))
-			self.options.addArguments("user-agent="+self.user_agent)
-			self.driver.close()
-			self.driver = webdriver.Chrome(self.options)
+			self.driver.quit()
+			self.options.add_argument('--user-agent="'+self.user_agent+'"')
+			self.driver = webdriver.Chrome(options=self.options)
 		elif self.preferred_browser == 'msedge':
 			raise ValueError("idk how to do this on msedge sorry")
 		else:
 			raise ValueError("Unsupported browser")
 		self.accepted_gdpr = False
 		self.accepted_cookies = False
+		print('Browser engine successfully initialized')
 	
 	def quit(self):
 		self.driver.quit()

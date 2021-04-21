@@ -3,13 +3,14 @@ import requests
 import re
 import bs4
 import selenium
-from browser.engine import browser_engine
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from mega import Mega
 import pdb
 from prettytable import PrettyTable
 import traceback
+
+from shinden.master import shinden_master_class
 
 from mirrors.aparat import aparat_handler
 from mirrors.cda import cda_handler
@@ -29,73 +30,6 @@ from mirrors.vidlox import vidlox_handler
 from mirrors.vidoza import vidoza_handler
 from mirrors.vkontakte import vkontakte_handler
 from mirrors.exceptions.dead import DeadMirror
-
-class episode_list(object):
-	def __init__(self, anime_id):
-		query_url = "https://shinden.pl/series/"+anime_id+"/all-episodes"
-		req = requests.get(query_url)
-		html_page = req.content
-		soup = bs4.BeautifulSoup(html_page, "html.parser")
-# For whatever reason, reversing big_tag_matrix doesn't work
-		big_tag_matrix = soup.findAll('tbody', attrs={'class','list-episode-checkboxes'})[0].findAll('td')
-		self.episode_count = int(len(big_tag_matrix)/6)
-		self.title = []
-		self.id = []
-		count = 0
-		self.as_a_table = PrettyTable()
-		self.as_a_table.field_names = ['Numer', 'Tytuł']
-		while count < self.episode_count:
-			episode_id = re.sub('^.*/view/','',big_tag_matrix[(self.episode_count - count - 1)*6+5].findChild('a')['href'])
-			title = big_tag_matrix[(self.episode_count - count - 1)*6+1].get_text(strip=True)
-			self.title.append(title)
-			self.id.append(episode_id)
-			count += 1
-			self.as_a_table.add_row([str(count), title])
-	
-	def list_all(self):
-		print(self.as_a_table)
-
-class mirror_object(object):
-	def __init__(self, html_soup):
-		self.vendor = re.sub("^  \n", "", html_soup.find('td', {'class': 'ep-pl-name'}).text)
-		self.quality = html_soup.find('td',{'class':'ep-pl-res'}).text
-		self.audio_language = html_soup.find('td', {'class': 'ep-pl-alang'}).find('span', {'class': 'mobile-hidden'}).text
-		sub_language = html_soup.find('td', {'class': 'ep-pl-slang'}).findAll('span')
-		self.sub_language = "Brak" if(len(sub_language) < 2) else sub_language[1].text
-		self.date_added = html_soup.find('td', {'class': 'ep-online-added'}).text
-		self.xpath = html_soup.find('td', {'class': 'ep-buttons'}).find('a', {'class': 'change-video-player'}).attrs['id']
-
-class mirror_list(object):
-	def __init__(self,anime_id,episode_id,browser):
-		print('started mirror_list class')
-		episode_url = "https://shinden.pl/episode/"+anime_id+"/view/"+episode_id
-		print('opening '+episode_url)
-		browser.driver.get(episode_url)
-		browser.accept_gdpr()
-		browser.accept_cookies()
-		browser.click_invisible_bullshit()
-		print('searching for episode-player-list section')
-		episode_tags = browser.find_tags_with_multiple_classes('table', ['data-view-table-strips', 'data-view-table-big', 'data-view-hover'])[0].find('tbody')
-		print('entering result loop')
-		self.mirror = []
-		count = 0
-		self.as_a_table = PrettyTable()
-		self.as_a_table.field_names = ['Numer', 'Źródło', 'Jakość', 'Język', 'Napisy', 'Data dodania', 'Wspierany']
-		for item in episode_tags.findAll('tr'):
-			self.mirror.append(mirror_object(item))
-			self.as_a_table.add_row([str(count+1), self.mirror[count].vendor, self.mirror[count].quality, self.mirror[count].audio_language, self.mirror[count].sub_language, self.mirror[count].date_added, judge_mirror(self.mirror[count].vendor)])
-			count += 1
-	
-	def list_all(self):
-		print(self.as_a_table)
-
-	def get_mirror_index_by_name(self, vendor_name):
-		count = 0
-		for item in self.mirror:
-			if self.mirror[count].vendor == vendor_name:
-				return count
-			count += 1
-		return -1
 
 class MirrorVendorUnsupported(Exception):
 	"""Raised when mirror vendor is unsupported. Let us know by filing an issue."""
@@ -347,12 +281,11 @@ class shinden_direct_url(object):
 		browser.wait_for_document_to_finish_loading()
 		return result
 	
-	def __init__(self, browser, mirror):
+	def __init__(self, browser, mirror, supported_mirrors):
 		self.compatible_with_watchtogether = False
 		self.download_possible = False
 		self.requires_referer = False
 		self.requires_browser_identity = False
-		global supported_mirrors
 		self.__compatible_mirror_types = supported_mirrors
 		try:
 			self.url = self.__get_url(browser, mirror)
@@ -363,201 +296,21 @@ class shinden_direct_url(object):
 			print('Received URL #'+str(count+1)+': '+self.url[count])
 			count += 1
 
-supported_mirrors = ['Sibnet', 'Mega', 'Streamtape', 'Dood', 'Streamsb', 'Cda', 'Mp4upload', 'Vidloxtv', 'Vidoza', 'Fb', 'Vk', 'Aparat', 'Dailymotion', 'Yourupload', 'Myviru']
-
-class search_result(object):
-	def __init__(self, title, type_of_broadcast, episode_count, id_of_anime):
-		self.title = title
-		self.type_of_broadcast = type_of_broadcast
-		self.episode_count = episode_count
-		self.id_of_anime = id_of_anime
-
-class shinden_ratings(object):
-	def __init__(self, html_soup):
-		dlugi_tekst = re.sub("\n", "", html_soup.findAll('li', attrs={'class', 'ratings-col'})[0].text)
-		if dlugi_tekst != '':
-			worek = re.sub(":", "", re.sub(",", ".", dlugi_tekst)).split(" ")
-			self.overall = worek[1]
-			self.storyline = worek[3]
-			self.graphics = worek[5]
-			self.music = worek[7]
-			self.characters = worek[9]
-		else:
-# Tutaj trafiają animce które nie mają jeszcze ocen bo np. zostały zapowiedziane ale jeszcze ich nie ma na shindenie
-			self.overall = 'Brak'
-			self.storyline = 'Brak'
-			self.graphics = 'Brak'
-			self.music = 'Brak'
-			self.characters = 'Brak'
-			self.top = 'Brak'
-		self.top = re.sub(",", ".", html_soup.findAll('li', attrs={'class', 'rate-top'})[0].text)
-	
-	def list_all(self):
-		print('Ogółem: '+self.overall)
-		print('Fabuła: '+self.storyline)
-		print('Grafika: '+self.graphics)
-		print('Muzyka: '+self.music)
-		print('Postacie: '+self.characters)
-		print('TOP: '+self.top)
-
-class search_result_class(object):
-	def __init__(self, html_soup):
-		self.id = re.sub("^.*/", "", re.sub("-.*$", "", str(html_soup.findAll('h3')[0])))
-		self.title = re.sub("^ *", "", html_soup.findAll('h3')[0].text)
-		self.broadcast = html_soup.findAll('li', attrs={'class', 'title-kind-col'})[0].text
-		self.episode_count = int(re.sub(" *$", "", html_soup.findAll('li', attrs={'class', 'episodes-col'})[0].text))
-		self.ratings = shinden_ratings(html_soup)
-		self.tags = re.sub("\n$", "", re.sub("^\n", "", html_soup.findAll('ul', attrs={'class', 'tags'})[0].text)).split("\n")
-
-class ShindenDowntime(Exception):
-	"""
-	Thrown when Shinden is down
-	"""
-	pass
-
-class ShindenUnknownException(Exception):
-	"""
-	Pass when Shinden behaves in ways we cannot expect
-	"""
-	pass
-
-def detect_shinden_downtime_from_soup(soup):
-	error_msg = soup.find('p', {'class': 'enormous-font bree-font'}).text
-	if error_msg == ' 500 ':
-		raise ShindenDowntime
-	else:
-		raise UnknownException
-
-class shinden_search(object):
-	def __make_string_url_friendly(self, input_text):
-		return re.sub(" ", "+", input_text)
-	
-	def __init__(self, search_term):
-		url = 'https://shinden.pl/series?search='+self.__make_string_url_friendly(search_term)
-		session = requests
-		response = session.get(url)
-		soup = bs4.BeautifulSoup(response.text, "html.parser")
-		try:
-			crazy_table = soup.findAll('section', attrs={'class', 'title-table'})[0].findAll('article')[0]
-		except IndexError:
-			try:
-				detect_shinden_downtime_from_soup(soup)
-			except ShindenDowntime:
-				print('Shinden is down. Nothing we can do about it. Try again later.')
-				quit_safely()
-		anime_html_list = crazy_table.findAll('ul', attrs={'class', 'div-row'})
-		self.count = len(anime_html_list)
-		self.result = []
-		count = 0
-		self.as_a_table = PrettyTable()
-		self.as_a_table.field_names = ['Numer', 'Tytuł', 'Odcinki', 'Emisja', 'Ogółem', 'Fabuła', 'Grafika', 'Muzyka', 'Postacie', 'TOP', 'Tagi']
-		while count < self.count:
-			self.result.append(search_result_class(anime_html_list[count]))
-			self.as_a_table.add_row([str(count+1), self.result[count].title, self.result[count].episode_count, self.result[count].broadcast, self.result[count].ratings.overall, self.result[count].ratings.storyline, self.result[count].ratings.graphics, self.result[count].ratings.music, self.result[count].ratings.characters, self.result[count].ratings.top, self.result[count].tags ])
-			count += 1
-	
-	def list_search_results(self):
-		print(self.as_a_table)
-
-def search_for_anime():
-	global debug_mode
-	if debug_mode == True:
-		search_results = shinden_search('JoJo no Kimyou na Bouken: Stardust Crusaders - Egypt-hen')
-		search_results.list_search_results()
-		return search_results
-	print('What would you like to watch? If nothing, just enter nothing')
-	search_term = input("Enter search term: ")
-	if search_term == "":
-		quit_safely()
-	search_results = shinden_search(search_term)
-	search_results.list_search_results()
-	return search_results
-
-def quit_safely():
-	global browser
-	browser.quit()
-	quit()
-
-def retrieve_anime_id_from_selection(search_results):
-	global debug_mode
-	if debug_mode == True:
-		return search_results.result[0].id
-	while True:
-		print('Select 0 to quit safely')
-		selected_anime = int(input("Select anime from above list (1-"+str(search_results.count)+"): "))
-		if selected_anime < 1 or selected_anime > search_results.count:
-			if selected_anime == 0:
-				quit_safely()
-		else:
-			selected_anime -= 1
-			if search_results.result[selected_anime].episode_count != 0:
-				return search_results.result[selected_anime].id
-			else:
-				print('This anime has no episodes. Choose something else.')
-
-def select_episode(episodes):
-	global debug_mode
-	if debug_mode == True:
-		return 0
-	while True:
-		max_episode = len(episodes.id)
-		print('Select 0 to quit safely')
-		episode_number = int(input("Enter episode number (1-"+str(max_episode)+"): "))
-		if episode_number > max_episode or episode_number < 1:
-			if episode_number == 0:
-				quit_safely()
-			print('Episode number outside of given range')
-		else:
-			return episode_number - 1
-
-def judge_mirror(mirror_name):
-	global supported_mirrors
-	return "Tak" if mirror_name in supported_mirrors else "Nie"
-
-def select_mirror(mirrors):
-	global debug_mode
-	if debug_mode == True:
-		return mirrors.get_mirror_index_by_name('Cda')
-	while True:
-		max_mirror = len(mirrors.mirror)
-		print('Select 0 to quit safely')
-		mirror_number = int(input("Enter mirror number (1-"+str(max_mirror)+"): "))
-		if mirror_number > max_mirror or mirror_number < 1:
-			if mirror_number == 0:
-				quit_safely()
-			elif mirror_number == -2:
-				return -2
-			else:
-				print('Mirror number outside of given range')
-		else:
-			return mirror_number - 1
-
 debug_mode = False
-extreme_debug_mode = False
-
-print('Starting browser engine')
-browser = browser_engine(debug_mode=False, fast_mode=True)
-print('Browser engine successfully initialized')
-while True:
-	search_results = search_for_anime()
-	anime_id = retrieve_anime_id_from_selection(search_results)
-	episodes = episode_list(anime_id)
-	episodes.list_all()
+test_mode = False
+shinden = shinden_master_class(debug_mode=debug_mode, fast_mode=True, test_mode=test_mode)
+try:
 	while True:
-		episode_number = select_episode(episodes)
-		mirrors = mirror_list(anime_id,episodes.id[episode_number],browser)
-		mirrors.list_all()
-		mirror_number = select_mirror(mirrors)
-		if mirror_number != -2:
-			try:
-				file_url = shinden_direct_url(browser,mirrors.mirror[mirror_number])
-			except MirrorVendorUnsupported:
-				print('Unsupported mirror vendor: '+mirrors.mirror[mirror_number].vendor)
-			except:
-				traceback.print_exc()
-				quit_safely()
-		if extreme_debug_mode == True:
+		shinden.search_for_anime()
+		shinden.select_anime()
+		while True:
+			shinden.select_episode()
+			shinden.select_mirror()
+			file_url = shinden_direct_url(shinden.browser, shinden.mirror_to_scrape, shinden.mirrors.supported_mirrors)
+			if test_mode == True:
+				break
+		if test_mode == True:
 			break
-	if extreme_debug_mode == True:
-		break
-browser.quit()
+except:
+	traceback.print_exc()
+shinden.quit_safely()
