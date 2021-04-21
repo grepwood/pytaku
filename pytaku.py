@@ -18,6 +18,8 @@ try:
 				break
 		if test_mode == True:
 			break
+except SystemExit:
+	quit()
 except:
 	traceback.print_exc()
-shinden.quit_safely()
+shinden.browser.quit()
