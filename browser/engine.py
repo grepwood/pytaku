@@ -24,20 +24,16 @@ class browser_engine(object):
 			self.options.headless = not debug_mode
 			self.profile.update_preferences()
 			self.driver = webdriver.Firefox(self.profile,options=self.options)
-			self.user_agent = self.driver.execute_script("return navigator.userAgent;")
 		elif self.preferred_browser == 'google-chrome-stable':
 			self.options = webdriver.ChromeOptions()
 			self.options.add_argument("-lang=pl")
 			self.options.headless = not debug_mode
 			self.driver = webdriver.Chrome(options=self.options)
-			self.user_agent = re.sub('Headless','',self.driver.execute_script("return navigator.userAgent;"))
-			self.driver.quit()
-			self.options.add_argument('--user-agent="'+self.user_agent+'"')
-			self.driver = webdriver.Chrome(options=self.options)
 		elif self.preferred_browser == 'msedge':
 			raise ValueError("idk how to do this on msedge sorry")
 		else:
 			raise ValueError("Unsupported browser")
+		self.user_agent = self.driver.execute_script("return navigator.userAgent;")
 		self.accepted_gdpr = False
 		self.accepted_cookies = False
 		print('Browser engine successfully initialized')
@@ -64,10 +60,14 @@ class browser_engine(object):
 	
 	def accept_gdpr(self):
 		if self.accepted_gdpr == False:
+			if self.preferred_browser == 'firefox':
+				nasty_div = '//html/body/div[16]/div[1]/div[2]/div/div[2]/button[2]'
+			elif self.preferred_browser == 'google-chrome-stable':
+				nasty_div = '//html/body/div[14]/div[1]/div[2]/div/div[2]/button[2]'
 			print('Accepting GDPR')
 			self.wait_for_document_to_finish_loading()
-			self.wait_for_element_to_appear('//html/body/div[16]/div[1]/div[2]/div/div[2]/button[2]')
-			self.driver.find_elements_by_xpath('//html/body/div[16]/div[1]/div[2]/div/div[2]/button[2]')[0].click()
+			self.wait_for_element_to_appear(nasty_div)
+			self.driver.find_elements_by_xpath(nasty_div)[0].click()
 			print('GDPR accepted')
 			self.accepted_gdpr = True
 	
