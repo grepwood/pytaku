@@ -1,7 +1,4 @@
 bs4
-json
-mega.py
 prettytable
-re
 requests
 selenium
