@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import selenium
 import re
 import pdb
+import sys
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
@@ -17,20 +18,33 @@ class browser_engine(object):
 		self.profile = ""
 		self.options = ""
 		self.driver = ""
+		self.operating_system = sys.platform
 		if self.preferred_browser == 'firefox':
 			self.profile = webdriver.FirefoxProfile()
 			self.options = webdriver.FirefoxOptions()
 			self.profile.set_preference("intl.accept_languages", "pl")
 			self.options.headless = not debug_mode
 			self.profile.update_preferences()
-			self.driver = webdriver.Firefox(self.profile,options=self.options)
+			if self.operating_system == 'darwin':
+				self.driver = webdriver.Firefox(self.profile, options=self.options, executable_path='./geckodriver')
+			else:
+				self.driver = webdriver.Firefox(self.profile, options=self.options)
 		elif self.preferred_browser == 'google-chrome-stable':
 			self.options = webdriver.ChromeOptions()
 			self.options.add_argument("-lang=pl")
 			self.options.headless = not debug_mode
-			self.driver = webdriver.Chrome(options=self.options)
-		elif self.preferred_browser == 'msedge':
-			raise ValueError("idk how to do this on msedge sorry")
+			if self.operating_system == 'darwin':
+				self.driver = webdriver.Chrome(options=self.options, executable_path='./chromedriver')
+			else:
+				self.driver = webdriver.Chrome(options=self.options)
+#		elif self.preferred_browser == 'msedge':
+#			self.options = webdriver.EdgeOptions()
+#			self.options.add_argument("-lang=pl")
+#			self.options.headless = not debug_mode
+#			if self.operating_system == 'darwin':
+#				self.driver = webdriver.Edge(options=self.options, executable_path='./chromedriver')
+#			else:
+#				self.driver = webdriver.Edge(options=self.options)
 		else:
 			raise ValueError("Unsupported browser")
 		self.user_agent = self.driver.execute_script("return navigator.userAgent;")
@@ -45,9 +59,15 @@ class browser_engine(object):
 		
 	def start_again(self):
 		if self.preferred_browser == 'firefox':
-			self.driver = webdriver.Firefox(self.profile,options=self.options)
+			if self.operating_system == 'darwin':
+				self.driver = webdriver.Firefox(self.profile, options=self.options, executable_path='./geckodriver')
+			else:
+				self.driver = webdriver.Firefox(self.profile, options=self.options)
 		elif self.preferred_browser == 'google-chrome-stable':
-			self.driver = webdriver.Chrome(self.profile,options=self.options)
+			if self.operating_system == 'darwin':
+				self.driver = webdriver.Chrome(options=self.options, executable_path='./chromedriver')
+			else:
+				self.driver = webdriver.Chrome(options=self.options)
 		elif self.preferred_browser == 'msedge':
 			raise ValueError("idk how to do this on msedge sorry")
 		else:
