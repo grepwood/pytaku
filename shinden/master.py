@@ -53,6 +53,10 @@ class shinden_master_class(object):
 		self.episodes = episode_list(self.selected_anime_id, graphic_interface=self.graphic_interface)
 		self.episodes.list_all()
 
+	def reload_episode_page(self):
+		self.browser.driver.get(self.mirrors.episode_url)
+		self.browser.wait_for_document_to_finish_loading()
+
 	def select_episode(self):
 		result = 0
 		if self.test_mode == False:

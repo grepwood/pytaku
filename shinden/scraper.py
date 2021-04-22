@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import selenium
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
+import pdb
 
 from mirrors.aparat import aparat_handler
 from mirrors.cda import cda_handler
@@ -42,7 +43,10 @@ class direct_url(object):
 		print('waiting for countdown')
 		browser.wait_for_countdown()
 		print('parsing player element')
-		page_source = browser.driver.find_elements_by_xpath('//html/body/div[4]/div/article/div[2]')[0].get_attribute('innerHTML')
+		try:
+			page_source = browser.driver.find_elements_by_xpath('//html/body/div[4]/div/article/div[2]')[0].get_attribute('innerHTML')
+		except:
+			pdb.set_trace()
 		soup = BeautifulSoup(page_source,"html.parser")
 		return soup
 	

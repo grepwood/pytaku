@@ -4,7 +4,12 @@ import browser.test as detect_browsers
 from bs4 import BeautifulSoup
 import selenium
 import re
+
+import pdb
+import traceback
+
 import sys
+import itertools
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
@@ -50,12 +55,12 @@ class browser_engine(object):
 		self.accepted_gdpr = False
 		self.accepted_cookies = False
 		print('Browser engine successfully initialized')
-
+	
 	def quit(self):
 		self.driver.quit()
 		self.accepted_gpdr = False
 		self.accepted_cookies = False
-
+		
 	def start_again(self):
 		if self.preferred_browser == 'firefox':
 			if self.operating_system == 'darwin':
@@ -67,28 +72,47 @@ class browser_engine(object):
 				self.driver = webdriver.Chrome(options=self.options, executable_path='./chromedriver')
 			else:
 				self.driver = webdriver.Chrome(options=self.options)
-		elif self.preferred_browser == 'msedge':
-			raise ValueError("idk how to do this on msedge sorry")
+#		elif self.preferred_browser == 'msedge':
+#			if self.operating_system == 'darwin':
+#				self.driver = webdriver.Edge(options=self.options, executable_path='./edgedriver')
+#			else:
+#				self.driver = webdriver.Edge(options=self.options)
 		else:
 			raise ValueError("Unsupported browser")
-
+	
 	def wait_for_document_to_finish_loading(self, verbose=True):
 		if verbose == True: print('Waiting for document to load')
 		while self.driver.execute_script("return document.readyState;") != "complete": next
 		if verbose == True: print('Document finished loading')
-
+	
 	def accept_gdpr(self):
 		if self.accepted_gdpr == False:
-			if self.preferred_browser == 'firefox':
-				nasty_div = '//html/body/div[16]/div[1]/div[2]/div/div[2]/button[2]'
-			elif self.preferred_browser == 'google-chrome-stable':
-				nasty_div = '//html/body/div[14]/div[1]/div[2]/div/div[2]/button[2]'
 			print('Accepting GDPR')
 			self.wait_for_document_to_finish_loading()
-			self.wait_for_element_to_appear(nasty_div)
+			while True:
+				try:
+					nasty_div = self.find_xpath_by_text('Zaakceptuj wszystko')
+					break
+				except:
+					next
+			print('Found GDPR accept button in xpath ' + nasty_div)
 			self.driver.find_elements_by_xpath(nasty_div)[0].click()
 			print('GDPR accepted')
 			self.accepted_gdpr = True
+
+	def find_xpath_by_text(self, txt):
+		soup = BeautifulSoup(self.driver.page_source, "lxml")
+		element = soup.find(string=txt)
+		components = []
+		child = element if element.name else element.parent
+		for parent in child.parents:
+			previous = itertools.islice(parent.children, 0, parent.contents.index(child))
+			xpath_tag = child.name
+			xpath_index = sum(1 for i in previous if i.name == xpath_tag) + 1
+			components.append(xpath_tag if xpath_index == 1 else '%s[%d]' % (xpath_tag, xpath_index))
+			child = parent
+		components.reverse()
+		return '//%s' % '/'.join(components)
 
 	def scroll_to_element(self,element):
 		actions = ActionChains(self.driver)
@@ -96,7 +120,7 @@ class browser_engine(object):
 		self.click_invisible_bullshit()
 		while not self.driver.find_elements_by_xpath(element)[0].is_displayed():
 			actions.send_keys_to_element(self.driver.find_elements_by_xpath('//html/body')[0], Keys.DOWN).perform()
-
+	
 	def click_invisible_bullshit(self):
 		bullshit_xpath = '//html/body/div[14]'
 		bullshit_style = 'position: fixed; display: block; width: 100%; height: 100%; inset: 0px; background-color: rgba(0, 0, 0, 0); z-index: 300000;'
@@ -118,42 +142,48 @@ class browser_engine(object):
 			else:
 				print('bullshit not found by xpath')
 				break
-
+	
 	def accept_cookies(self):
 		if self.accepted_cookies == False:
-			print('Accepting cookies')
-			self.wait_for_document_to_finish_loading()
-			self.wait_for_element_to_appear('//html/body/div[3]/p/a[1]')
-			while True:
-				try:
-					self.driver.find_elements_by_xpath('//html/body/div[3]/p/a[1]')[0].click()
-					break
-				except selenium.common.exceptions.ElementClickInterceptedException:
+			try:
+				print('Accepting cookies')
+				self.wait_for_document_to_finish_loading()
+				self.wait_for_element_to_appear('//html/body/div[3]/p/a[1]')
+				while True:
 					try:
-						self.click_invisible_bullshit()
-					except selenium.common.exceptions.StaleElementReferenceException:
-						print('bullshit element is stale, it is ok to accept cookies')
-					try:
-						self.scroll_to_element('//html/body/div[14]')
-						self.driver.find_elements_by_xpath('//html/body/div[14]')[0].click()
-					except selenium.common.exceptions.ElementNotInteractableException:
 						self.driver.find_elements_by_xpath('//html/body/div[3]/p/a[1]')[0].click()
-			print('Cookies accepted')
+						break
+					except selenium.common.exceptions.ElementClickInterceptedException:
+						try:
+							self.click_invisible_bullshit()
+						except selenium.common.exceptions.StaleElementReferenceException:
+							print('bullshit element is stale, it is ok to accept cookies')
+						try:
+							self.scroll_to_element('//html/body/div[14]')
+							self.driver.find_elements_by_xpath('//html/body/div[14]')[0].click()
+						except selenium.common.exceptions.ElementNotInteractableException:
+							self.driver.find_elements_by_xpath('//html/body/div[3]/p/a[1]')[0].click()
+				print('Cookies accepted')
+			except:
+				traceback.print_exc()
+				pdb.set_trace()
 			self.accepted_cookies = True
-
+	
 	def wait_for_countdown(self):
 		while self.driver.find_elements_by_xpath('//*[@id="countdown"]') != []: next
-
+	
 	def wait_for_element_to_appear(self, element):
+		print('Waiting for element to appear: ' + element)
 		while self.driver.find_elements_by_xpath(element) == []: next
-
+		print('Element appeared')
+	
 	def get_cookie_even_if_it_takes_time(self, cookie_name):
 		cookie_obj = ""
 		while True:
 			cookie_obj = self.driver.get_cookie(cookie_name)
 			if type(cookie_obj) is dict: break
 		return cookie_obj
-
+	
 	def find_tags_with_multiple_classes(self, type_of_tag, classes):
 		results = []
 		html_soup = BeautifulSoup(self.driver.page_source,"html.parser")

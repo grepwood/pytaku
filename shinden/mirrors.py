@@ -21,9 +21,9 @@ class mirror_list(object):
 	def __init__(self, anime_id, episode_id, browser, graphic_interface=False):
 		self.graphic_interface = graphic_interface
 		self.supported_mirrors = ['Sibnet', 'Mega', 'Streamtape', 'Dood', 'Streamsb', 'Cda', 'Mp4upload', 'Vidloxtv', 'Vidoza', 'Fb', 'Vk', 'Aparat', 'Dailymotion', 'Yourupload', 'Myviru']
-		episode_url = "https://shinden.pl/episode/"+anime_id+"/view/"+episode_id
-		print('opening '+episode_url)
-		browser.driver.get(episode_url)
+		self.episode_url = "https://shinden.pl/episode/"+anime_id+"/view/"+episode_id
+		print('opening '+self.episode_url)
+		browser.driver.get(self.episode_url)
 		browser.accept_gdpr()
 		browser.accept_cookies()
 		browser.click_invisible_bullshit()
