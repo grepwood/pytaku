@@ -93,6 +93,9 @@ class browser_engine(object):
 				try:
 					nasty_div = self.find_xpath_by_text('Zaakceptuj wszystko')
 					break
+				except ModuleNotFoundError:
+					traceback.print_exc()
+					self.quit()
 				except:
 					next
 			print('Found GDPR accept button in xpath ' + nasty_div)
@@ -101,7 +104,7 @@ class browser_engine(object):
 			self.accepted_gdpr = True
 
 	def find_xpath_by_text(self, txt):
-		soup = BeautifulSoup(self.driver.page_source, "lxml")
+		soup = BeautifulSoup(self.driver.page_source, "html.parser")
 		element = soup.find(string=txt)
 		components = []
 		child = element if element.name else element.parent
