@@ -14,6 +14,7 @@ from mirrors.dailymotion import dailymotion_handler
 from mirrors.dood import dood_handler
 from mirrors.facebook import facebook_handler
 from mirrors.mp4upload import mp4upload_handler
+from mirrors.mystream import mystream_handler
 from mirrors.myviru import myviru_handler
 from mirrors.sibnet import sibnet_handler
 from mirrors.streamsb import streamsb_handler
@@ -24,6 +25,7 @@ from mirrors.yourupload import yourupload_handler
 from mirrors.vidlox import vidlox_handler
 from mirrors.vidoza import vidoza_handler
 from mirrors.vkontakte import vkontakte_handler
+from mirrors.upvid import upvid_handler
 from mirrors.exceptions.dead import DeadMirror
 from mirrors.exceptions.unsupported import MirrorVendorUnsupported
 
@@ -59,7 +61,7 @@ class direct_url(object):
 				if mirror.vendor in ['Yourupload']:
 					players = soup.findAll('a', {'class': 'button-player'})
 					attribute_to_look_for = 'href'
-				elif mirror.vendor in ['Tunepk']:
+				elif mirror.vendor in ['Tunepk', 'Clipwatching']:
 					players = soup.findAll('a', {'class': 'player-external-link'})
 					attribute_to_look_for = 'href'
 				else:
@@ -272,6 +274,14 @@ class direct_url(object):
 			self.cookie = tmp.cookie
 			self.user_agent = ""
 			self.raw_data = ""
+		elif mirror.vendor == 'Mystream':
+			self.compatible_with_watchtogether = False
+			self.download_possible = True
+			result = mystream_handler(browser, player_url).url
+		elif mirror.vendor == 'Upvid':
+			self.compatible_with_watchtogether = False
+			self.download_possible = True
+			result = upvid_handler(browser, player_url).url
 		browser.driver.get(shinden_url)
 		browser.wait_for_document_to_finish_loading()
 		return result

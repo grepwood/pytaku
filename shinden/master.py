@@ -19,7 +19,7 @@ class shinden_master_class(object):
 
 	def __cli_search_for_anime(self):
 		if self.test_mode == True:
-			search_results = shinden_search('JoJo no Kimyou na Bouken: Stardust Crusaders - Egypt-hen', graphic_interface=self.graphic_interface)
+			search_results = shinden_search('Darling in the FranXX', graphic_interface=self.graphic_interface)
 			search_results.list_search_results()
 			return search_results
 		print('What would you like to watch? If nothing, just enter nothing')

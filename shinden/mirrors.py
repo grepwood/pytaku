@@ -20,7 +20,7 @@ class mirror_list(object):
 
 	def __init__(self, anime_id, episode_id, browser, graphic_interface=False):
 		self.graphic_interface = graphic_interface
-		self.supported_mirrors = ['Sibnet', 'Mega', 'Streamtape', 'Dood', 'Streamsb', 'Cda', 'Mp4upload', 'Vidloxtv', 'Vidoza', 'Fb', 'Vk', 'Aparat', 'Dailymotion', 'Yourupload', 'Myviru']
+		self.supported_mirrors = ['Sibnet', 'Mega', 'Streamtape', 'Dood', 'Streamsb', 'Cda', 'Mp4upload', 'Vidloxtv', 'Vidoza', 'Fb', 'Vk', 'Aparat', 'Dailymotion', 'Yourupload', 'Myviru', 'Mystream', 'Upvid']
 		self.episode_url = "https://shinden.pl/episode/"+anime_id+"/view/"+episode_id
 		print('opening '+self.episode_url)
 		browser.driver.get(self.episode_url)
@@ -33,7 +33,10 @@ class mirror_list(object):
 		self.as_a_table = PrettyTable()
 		self.as_a_table.field_names = ['Numer', 'Źródło', 'Jakość', 'Język', 'Napisy', 'Data dodania', 'Wspierany']
 		for item in episode_tags.findAll('tr'):
-			self.mirror.append(mirror_object(item))
+			detected_mirror = mirror_object(item)
+			if detected_mirror.vendor == 'Default':
+				next
+			self.mirror.append(detected_mirror)
 			self.as_a_table.add_row([str(count+1), self.mirror[count].vendor, self.mirror[count].quality, self.mirror[count].audio_language, self.mirror[count].sub_language, self.mirror[count].date_added, self.__judge_mirror(self.mirror[count].vendor)])
 			count += 1
 		self.mirror_count = count
