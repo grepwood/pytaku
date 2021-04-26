@@ -123,10 +123,29 @@ class browser_engine(object):
 		self.click_invisible_bullshit()
 		while not self.driver.find_elements_by_xpath(element)[0].is_displayed():
 			actions.send_keys_to_element(self.driver.find_elements_by_xpath('//html/body')[0], Keys.DOWN).perform()
-	
+
+	def get_xpath_from_element(self, element):
+		components = []
+		child = element if element.name else element.parent
+		for parent in child.parents:
+			siblings = parent.find_all(child.name, recursive=False)
+			components.append(
+				child.name
+				if siblings == [child] else
+				'%s[%d]' % (child.name, 1 + siblings.index(child))
+			)
+			child = parent
+		components.reverse()
+		return '//%s' % '/'.join(components)
+
 	def click_invisible_bullshit(self):
-		bullshit_xpath = '//html/body/div[14]'
 		bullshit_style = 'position: fixed; display: block; width: 100%; height: 100%; inset: 0px; background-color: rgba(0, 0, 0, 0); z-index: 300000;'
+		soup = BeautifulSoup(self.driver.page_source, "html.parser")
+		bullshit_div = soup.find('div', attrs={'style': bullshit_style})
+		if bullshit_div is None:
+			print('Bullshit has not been detected')
+			return
+		bullshit_xpath = self.get_xpath_from_element(bullshit_div)
 		bullshit_element = self.driver.find_elements_by_xpath(bullshit_xpath)
 		actions = ActionChains(self.driver)
 		print('clicking invisible bullshit')
@@ -145,16 +164,18 @@ class browser_engine(object):
 			else:
 				print('bullshit not found by xpath')
 				break
+		return
 	
 	def accept_cookies(self):
 		if self.accepted_cookies == False:
 			try:
 				print('Accepting cookies')
 				self.wait_for_document_to_finish_loading()
-				self.wait_for_element_to_appear('//html/body/div[3]/p/a[1]')
+				cookie_accept_button_xpath = self.find_xpath_by_text('Akceptuję')
+				self.wait_for_element_to_appear(cookie_accept_button_xpath)
 				while True:
 					try:
-						self.driver.find_elements_by_xpath('//html/body/div[3]/p/a[1]')[0].click()
+						self.driver.find_elements_by_xpath(cookie_accept_button_xpath)[0].click()
 						break
 					except selenium.common.exceptions.ElementClickInterceptedException:
 						try:
@@ -162,10 +183,9 @@ class browser_engine(object):
 						except selenium.common.exceptions.StaleElementReferenceException:
 							print('bullshit element is stale, it is ok to accept cookies')
 						try:
-							self.scroll_to_element('//html/body/div[14]')
-							self.driver.find_elements_by_xpath('//html/body/div[14]')[0].click()
+							self.click_invisible_bullshit()
 						except selenium.common.exceptions.ElementNotInteractableException:
-							self.driver.find_elements_by_xpath('//html/body/div[3]/p/a[1]')[0].click()
+							self.driver.find_elements_by_xpath(cookie_accept_button_xpath)[0].click()
 				print('Cookies accepted')
 			except:
 				traceback.print_exc()
