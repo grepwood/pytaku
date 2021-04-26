@@ -57,15 +57,21 @@ class shinden_master_class(object):
 		self.browser.driver.get(self.mirrors.episode_url)
 		self.browser.wait_for_document_to_finish_loading()
 
-	def select_episode(self):
-		result = 0
-		if self.test_mode == False:
-			result = self.episodes.select_episode()
-		if result == -1:
-			self.quit_safely()
+	def select_episode(self, episode=-1):
+		if episode != -1:
+			result = episode
+		else:
+			result = 0
+			if self.test_mode == False:
+				result = self.episodes.select_episode()
+			if result == -1:
+				self.quit_safely()
 		self.selected_episode = self.episodes.id[result]
 		self.mirrors = mirror_list(self.selected_anime_id, self.selected_episode, self.browser, graphic_interface=self.graphic_interface)
 		self.mirrors.list_all()
+
+	def get_episode_url(self):
+		return "https://shinden.pl/episode/"+self.selected_anime_id+"/view/"+self.selected_episode
 
 	def select_mirror(self):
 		result = 0
