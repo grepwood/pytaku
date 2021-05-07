@@ -17,9 +17,9 @@ class shinden_master_class(object):
 		self.test_mode = test_mode
 		self.browser = browser_engine(debug_mode=self.debug_mode, fast_mode=fast_mode)
 
-	def __cli_search_for_anime(self):
+	def __cli_search_for_anime(self, tm_search_term = ""):
 		if self.test_mode == True:
-			search_results = shinden_search('Darling in the FranXX', graphic_interface=self.graphic_interface)
+			search_results = shinden_search(tm_search_term, graphic_interface=self.graphic_interface)
 			search_results.list_search_results()
 			return search_results
 		print('What would you like to watch? If nothing, just enter nothing')
@@ -33,10 +33,10 @@ class shinden_master_class(object):
 		search_results.list_search_results()
 		return search_results
 
-	def search_for_anime(self):
+	def search_for_anime(self, tm_search_term = ""):
 		results = ""
 		if self.graphic_interface == False:
-			results = self.__cli_search_for_anime()
+			results = self.__cli_search_for_anime(tm_search_term = tm_search_term)
 		else:
 			raise ValueError("GUI not implemented yet")
 		self.search_results = results
@@ -73,13 +73,19 @@ class shinden_master_class(object):
 	def get_episode_url(self):
 		return "https://shinden.pl/episode/"+self.selected_anime_id+"/view/"+self.selected_episode
 
-	def select_mirror(self):
+	def select_mirror(self, tm_mirror = -1):
 		result = 0
 		if self.test_mode == True:
-			result = self.mirrors.get_mirror_index_by_name('Cda')
-			if result == -1:
-				print('Selecting by name did not work. Using first mirror.')
-				result = 0
+			if type(tm_mirror) is int:
+				if tm_mirror != -1:
+					result = tm_mirror
+				else:
+					result = 0
+			else:
+				result = self.mirrors.get_mirror_index_by_name(tm_mirror)
+				if result == -1:
+					print('Selecting by name did not work. Using first mirror.')
+					result = 0
 		else:
 			result = self.mirrors.select_mirror()
 		if result == -1:

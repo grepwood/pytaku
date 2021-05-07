@@ -4,6 +4,8 @@ import re
 from prettytable import PrettyTable
 from bs4 import BeautifulSoup
 
+supported_mirrors = ['Sibnet', 'Mega', 'Streamtape', 'Dood', 'Streamsb', 'Cda', 'Mp4upload', 'Vidloxtv', 'Vidoza', 'Fb', 'Vk', 'Aparat', 'Dailymotion', 'Yourupload', 'Myviru', 'Mystream', 'Upvid']
+
 class mirror_object(object):
 	def __init__(self, html_soup):
 		self.vendor = re.sub("^  \n", "", html_soup.find('td', {'class': 'ep-pl-name'}).text)
@@ -19,8 +21,9 @@ class mirror_list(object):
 		return "Tak" if mirror_name in self.supported_mirrors else "Nie"
 
 	def __init__(self, anime_id, episode_id, browser, graphic_interface=False):
+		global supported_mirrors
 		self.graphic_interface = graphic_interface
-		self.supported_mirrors = ['Sibnet', 'Mega', 'Streamtape', 'Dood', 'Streamsb', 'Cda', 'Mp4upload', 'Vidloxtv', 'Vidoza', 'Fb', 'Vk', 'Aparat', 'Dailymotion', 'Yourupload', 'Myviru', 'Mystream', 'Upvid']
+		self.supported_mirrors = supported_mirrors
 		self.episode_url = "https://shinden.pl/episode/"+anime_id+"/view/"+episode_id
 		print('opening '+self.episode_url)
 		browser.driver.get(self.episode_url)

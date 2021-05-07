@@ -16,18 +16,22 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 
 class browser_engine(object):
-	def __init__(self, debug_mode=False, fast_mode=True):
+	def __init__(self, debug_mode=False, fast_mode=True, preferred_browser = None):
 		print('Starting browser engine')
-		self.preferred_browser = detect_browsers.detect_browsers(fast_mode=fast_mode)[0]
+		if type(preferred_browser) is str:
+			self.preferred_browser = preferred_browser
+		else:
+			self.preferred_browser = detect_browsers.detect_browsers(fast_mode=fast_mode)[0]
 		self.profile = ""
 		self.options = ""
 		self.driver = ""
+		self.debug_mode = debug_mode
 		self.operating_system = sys.platform
 		if self.preferred_browser == 'firefox':
 			self.profile = webdriver.FirefoxProfile()
 			self.options = webdriver.FirefoxOptions()
 			self.profile.set_preference("intl.accept_languages", "pl")
-			self.options.headless = not debug_mode
+			self.options.headless = not self.debug_mode
 			self.profile.update_preferences()
 			if self.operating_system == 'darwin':
 				self.driver = webdriver.Firefox(self.profile, options=self.options, executable_path='./geckodriver')
@@ -36,7 +40,7 @@ class browser_engine(object):
 		elif self.preferred_browser == 'google-chrome-stable':
 			self.options = webdriver.ChromeOptions()
 			self.options.add_argument("-lang=pl")
-			self.options.headless = not debug_mode
+			self.options.headless = not self.debug_mode
 			if self.operating_system == 'darwin':
 				self.driver = webdriver.Chrome(options=self.options, executable_path='./chromedriver')
 			else:
@@ -44,7 +48,7 @@ class browser_engine(object):
 #		elif self.preferred_browser == 'msedge':
 #			self.options = webdriver.EdgeOptions()
 #			self.options.add_argument("-lang=pl")
-#			self.options.headless = not debug_mode
+#			self.options.headless = not self.debug_mode
 #			if self.operating_system == 'darwin':
 #				self.driver = webdriver.Edge(options=self.options, executable_path='./chromedriver')
 #			else:
@@ -55,31 +59,28 @@ class browser_engine(object):
 		self.accepted_gdpr = False
 		self.accepted_cookies = False
 		print('Browser engine successfully initialized')
-	
+
+	def handle_captcha(self, captcha_name):
+		print('ATTENTION! USER MUST SOLVE CAPTCHA!')
+		current_url = self.driver.current_url
+		temporary_browser = browser_engine(debug_mode=True, preferred_browser = self.preferred_browser)
+		temporary_browser.driver.get(current_url)
+		temporary_browser.wait_for_document_to_finish_loading(verbose=False)
+		while True:
+			x = temporary_browser.driver.title
+			if x != captcha_name:
+				break
+		print('Captcha solved')
+		temporary_browser.wait_for_document_to_finish_loading(verbose=False)
+		result = BeautifulSoup(temporary_browser.driver.page_source, "html.parser")
+		temporary_browser.quit()
+		return result
+
 	def quit(self):
 		self.driver.quit()
 		self.accepted_gpdr = False
 		self.accepted_cookies = False
-		
-	def start_again(self):
-		if self.preferred_browser == 'firefox':
-			if self.operating_system == 'darwin':
-				self.driver = webdriver.Firefox(self.profile, options=self.options, executable_path='./geckodriver')
-			else:
-				self.driver = webdriver.Firefox(self.profile, options=self.options)
-		elif self.preferred_browser == 'google-chrome-stable':
-			if self.operating_system == 'darwin':
-				self.driver = webdriver.Chrome(options=self.options, executable_path='./chromedriver')
-			else:
-				self.driver = webdriver.Chrome(options=self.options)
-#		elif self.preferred_browser == 'msedge':
-#			if self.operating_system == 'darwin':
-#				self.driver = webdriver.Edge(options=self.options, executable_path='./edgedriver')
-#			else:
-#				self.driver = webdriver.Edge(options=self.options)
-		else:
-			raise ValueError("Unsupported browser")
-	
+
 	def wait_for_document_to_finish_loading(self, verbose=True):
 		if verbose == True: print('Waiting for document to load')
 		while self.driver.execute_script("return document.readyState;") != "complete": next

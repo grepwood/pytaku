@@ -37,32 +37,37 @@ class cda_file(object):
 		return result
 
 	def __detect_captcha(self, browser):
-		return browser.driver.title == 'Attention Required! | Cloudflare'
+		return browser.driver.title == self.srapcza
 
 	def __get_direct_link(self, url, browser):
 		self.__goto_cda(browser, url)
-		video_xpath = '//html/body/div/div[1]/div/div/div/div/div/div/span[3]/span[1]/span/span[1]/video'
-		try:
-			result = browser.driver.find_elements_by_xpath(video_xpath)[0].get_attribute('src')
-		except IndexError:
+		soup = BeautifulSoup(browser.driver.page_source, "html.parser")
+		video_tag = soup.find('video', attrs={'class': 'pb-video-player'})
+		if video_tag is None:
 			if self.__detect_captcha(browser) == True:
 				raise CaptchaFound
-			elif len(browser.driver.find_elements_by_xpath(video_xpath)) == 0:
-				raise IncompleteCdaLoad
 			else:
-				print('Encountered unknown Cda error')
-				traceback.print_exc()
-				raise UnknownCdaError
-		return result
+				raise IncompleteCdaLoad
+		return video_tag.attrs['src']
 
 	def __get_time(self):
 		return int(time.time())
 
 	def __throw_coop_refusal_if_exceeded_timeout(self, time_start, timeout):
-		if self.__get_time() - time_start > timeout:
-			raise CdaRefusesCooperation
+		if self.__get_time() - time_start > timeout: raise CdaRefusesCooperation
+
+	def __get_direct_link_from_soup(self, soup):
+		return soup.find('video', attrs={'class': 'pb-video-player'}).attrs['src']
+
+	def __verify_direct_link(self, direct_link):
+		return re.match("^https://[a-z0-9]*.cda.pl/", direct_link)
+
+	def __deal_with_captcha(self):
+		soup = browser.handle_captcha(self.srapcza)
+		return self.__get_direct_link_from_soup(soup)
 
 	def __init__(self, url, browser):
+		self.srapcza = 'Attention Required! | Cloudflare'
 		cda_video_id = self.__get_cda_video_id(url)
 		cda_video_article_url = 'https://www.cda.pl/video/'+cda_video_id
 		session = requests
@@ -73,19 +78,23 @@ class cda_file(object):
 		timeout = 60
 		for quality in self.quality:
 			cda_embed_url = 'https://ebd.cda.pl/800x450/'+cda_video_id+'?wersja='+quality
+			print(cda_embed_url)
 			time_start = self.__get_time()
+			direct_link = ""
 			while True:
 				try:
 					direct_link = self.__get_direct_link(cda_embed_url, browser)
 				except CaptchaFound:
-					self.__throw_coop_refusal_if_exceeded_timeout(time_start, timeout)
-					next
+					direct_link = self.__deal_with_captcha()
 				except IncompleteCdaLoad:
 					self.__throw_coop_refusal_if_exceeded_timeout(time_start, timeout)
 					next
 				except UnknownCdaError:
 					self.__throw_coop_refusal_if_exceeded_timeout(time_start, timeout)
 					next
+				if self.__verify_direct_link(direct_link):
+					time_start = self.__get_time()
+					break
 			self.url.append(direct_link)
 			print('Cda '+quality+': '+direct_link)
 
