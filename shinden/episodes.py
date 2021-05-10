@@ -6,10 +6,10 @@ from bs4 import BeautifulSoup
 from prettytable import PrettyTable
 
 class episode_list(object):
-	def __init__(self, anime_id, graphic_interface=False):
+	def __init__(self, anime_id, cookie_dict, graphic_interface=False):
 		self.graphic_interface = graphic_interface
 		query_url = "https://shinden.pl/series/"+anime_id+"/all-episodes"
-		req = requests.get(query_url)
+		req = requests.get(query_url, cookies=cookie_dict)
 		soup = BeautifulSoup(req.content, "html.parser")
 		big_tag_matrix = soup.findAll('tbody', attrs={'class','list-episode-checkboxes'})[0].findAll('td')
 		self.episode_count = int(len(big_tag_matrix)/6)

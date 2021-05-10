@@ -5,7 +5,6 @@ from bs4 import BeautifulSoup
 import selenium
 import re
 
-import pdb
 import traceback
 
 import sys

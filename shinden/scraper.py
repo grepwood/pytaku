@@ -5,7 +5,6 @@ from bs4 import BeautifulSoup
 import selenium
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
-import pdb
 
 from mirrors.aparat import aparat_handler
 from mirrors.cda import cda_handler

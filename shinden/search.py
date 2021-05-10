@@ -29,7 +29,7 @@ class ShindenUnknownException(Exception):
 	pass
 
 class shinden_search(object):
-	def __detect_shinden_downtime_from_soup(soup):
+	def __detect_shinden_downtime_from_soup(self, soup):
 		error_msg = soup.find('p', {'class': 'enormous-font bree-font'}).text
 		if error_msg == ' 500 ':
 			raise ShindenDowntime
@@ -39,11 +39,11 @@ class shinden_search(object):
 	def __make_string_url_friendly(self, input_text):
 		return re.sub(" ", "+", input_text)
 	
-	def __init__(self, search_term, graphic_interface=False):
+	def __init__(self, search_term, cookie_dict, graphic_interface=False):
 		self.graphic_interface = graphic_interface
 		url = 'https://shinden.pl/series?search='+self.__make_string_url_friendly(search_term)
 		session = requests
-		response = session.get(url)
+		response = session.get(url, cookies=cookie_dict)
 		soup = BeautifulSoup(response.text, "html.parser")
 		try:
 			crazy_table = soup.findAll('section', attrs={'class', 'title-table'})[0].findAll('article')[0]

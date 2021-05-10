@@ -11,15 +11,26 @@ class shinden_master_class(object):
 		self.browser.quit()
 		quit()
 
+	def __get_important_cookie(self):
+		while True:
+			for cookie in self.browser.driver.get_cookies():
+				if cookie['name'] == 'cto_bundle':
+					return {cookie['name']: cookie['value']}
+
 	def __init__(self, debug_mode=False, fast_mode=True, graphic_interface=False, test_mode=False):
 		self.debug_mode = debug_mode
 		self.graphic_interface = graphic_interface
 		self.test_mode = test_mode
 		self.browser = browser_engine(debug_mode=self.debug_mode, fast_mode=fast_mode)
+		self.browser.driver.get('https://forum.shinden.pl')
+		self.browser.wait_for_document_to_finish_loading()
+		self.browser.driver.get('https://shinden.pl')
+		self.browser.wait_for_document_to_finish_loading()
+		self.important_cookie = self.__get_important_cookie()
 
 	def __cli_search_for_anime(self, tm_search_term = ""):
 		if self.test_mode == True:
-			search_results = shinden_search(tm_search_term, graphic_interface=self.graphic_interface)
+			search_results = shinden_search(tm_search_term, self.important_cookie, graphic_interface=self.graphic_interface)
 			search_results.list_search_results()
 			return search_results
 		print('What would you like to watch? If nothing, just enter nothing')
@@ -27,7 +38,7 @@ class shinden_master_class(object):
 		if search_term == "":
 			self.quit_safely()
 		try:
-			search_results = shinden_search(search_term)
+			search_results = shinden_search(search_term, self.important_cookie)
 		except:
 			self.quit_safely()
 		search_results.list_search_results()
@@ -50,7 +61,7 @@ class shinden_master_class(object):
 		if result == -1:
 			self.quit_safely()
 		self.selected_anime_id = result
-		self.episodes = episode_list(self.selected_anime_id, graphic_interface=self.graphic_interface)
+		self.episodes = episode_list(self.selected_anime_id, self.important_cookie, graphic_interface=self.graphic_interface)
 		self.episodes.list_all()
 
 	def reload_episode_page(self):
