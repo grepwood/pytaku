@@ -20,15 +20,13 @@ On anything but Windows:
 On Windows:
 1. Install Python 3.8.
 2. Install a supported browser.
-3. Download its webdriver to pytaku's directory.
-4. `python3 -m pip install --user -r requirements.txt`
-5. `python3 pytaku.py`
+3. `python -m pip install --user -r requirements.txt`
+4. `python pytaku.py`
 
 On MacOS:
 1. Install a supported browser.
-2. Download its webdriver to pytaku's directory.
-3. `python3 -m pip install --user -r requirements.txt`
-4. `./pytaku.py`
+2. `python3 -m pip install --user -r requirements.txt`
+3. `./pytaku.py`
 
 Supported browsers:
 - Mozilla Firefox

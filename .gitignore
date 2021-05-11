@@ -1,5 +1,8 @@
 __pycache__
+geckodriver
 geckodriver.exe
 geckodriver.log
+chromedriver
 chromedriver.exe
+msedgedriver
 msedgedriver.exe
