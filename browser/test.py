@@ -102,7 +102,6 @@ class browser_type(object):
 			file_we_want = self.windows_webdriver
 		elif operating_system == 'darwin':
 			file_we_want = self.webdriver
-		print('Chromedriver archive: ' + filename)
 		if filename.split('.')[-1] == 'zip':
 			with ZipFile(filename, 'r') as zipObj:
 				zipObj.extractall(path='.', members=[file_we_want])
