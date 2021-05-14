@@ -20,3 +20,7 @@ class mp4upload_handler(object):
 				raise DeadMirror
 			self.__goto_mp4upload(browser, url)
 			self.url.append(browser.driver.find_elements_by_xpath('//*[@id="player_html5_api"]')[0].get_attribute('src'))
+		self.compatible_with_watchtogether = False
+		self.download_possible = True
+		self.requires_referer = True
+		self.requires_tls_compromise = True

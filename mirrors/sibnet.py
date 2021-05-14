@@ -35,3 +35,5 @@ class sibnet_handler(object):
 			secondary_url = self.__retrieve_secondary_url(url)
 			final_url = self.__request_dance(url, secondary_url)
 			self.url.append(final_url)
+		self.compatible_with_watchtogether = True
+		self.download_possible = True

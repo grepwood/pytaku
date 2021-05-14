@@ -7,3 +7,5 @@ class vidlox_handler(object):
 		self.url = []
 		for url in player_url:
 			self.url.append(gd_apicode_cc_handler(browser, url, 'Vidlox').url)
+		self.compatible_with_watchtogether = False
+		self.download_possible = True

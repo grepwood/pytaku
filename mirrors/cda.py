@@ -104,3 +104,7 @@ class cda_handler(object):
 		for url in player_url:
 			x = cda_file(url, browser)
 			self.url.append(x.url[-1])
+		self.compatible_with_watchtogether = True
+		self.download_possible = True
+		self.requires_browser_identity = True
+		self.user_agent = browser.user_agent

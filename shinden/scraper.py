@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import selenium
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
+import pdb
 
 from mirrors.aparat import aparat_handler
 from mirrors.cda import cda_handler
@@ -12,6 +13,7 @@ from mirrors.cloud9 import cloud9_handler
 from mirrors.dailymotion import dailymotion_handler
 from mirrors.dood import dood_handler
 from mirrors.facebook import facebook_handler
+from mirrors.mega import mega_handler
 from mirrors.mp4upload import mp4upload_handler
 from mirrors.mystream import mystream_handler
 from mirrors.myviru import myviru_handler
@@ -84,7 +86,37 @@ class direct_url(object):
 				browser.driver.refresh()
 				browser.wait_for_document_to_finish_loading()
 		return player_url_list
-	
+
+	def __fill_out_blanks(self, result):
+		test = None
+		try:
+			test = result.requires_referer
+		except AttributeError:
+			result.requires_referer = False
+			result.referrer = []
+		try:
+			test = result.requires_redirect
+		except AttributeError:
+			result.requires_redirect = False
+		try:
+			test = result.requires_browser_identity
+		except AttributeError:
+			result.requires_browser_identity = False
+			result.user_agent = ""
+		try:
+			test = result.requires_raw_data
+		except AttributeError:
+			result.requires_raw_data = False
+		try:
+			test = result.requires_cookie
+		except AttributeError:
+			result.requires_cookie = False
+			result.cookie = {}
+		try:
+			test = result.requires_tls_compromise
+		except AttributeError:
+			result.requires_tls_compromise = False
+
 	def __get_url(self, browser, mirror):
 		if not mirror.vendor in self.__compatible_mirror_types:
 			raise MirrorVendorUnsupported
@@ -92,210 +124,58 @@ class direct_url(object):
 		shinden_url = browser.driver.current_url
 		result = ""
 		if mirror.vendor == 'Sibnet':
-			self.compatible_with_watchtogether = True
-			self.download_possible = True
-			self.requires_referer = False
-			self.requires_redirect = False
-			self.requires_browser_identity = False
-			self.requires_raw_data = False
-			self.requires_cookie = False
-			result = sibnet_handler(browser.user_agent, player_url).url
-			self.referer = ""
-			self.user_agent = ""
-			self.raw_data = ""
+			result = sibnet_handler(browser.user_agent, player_url)
 		elif mirror.vendor == 'Mega':
-			self.compatible_with_watchtogether = False
-			self.download_possible = True
-			self.requires_referer = False
-			self.requires_redirect = False
-			self.requires_browser_identity = False
-			self.requires_raw_data = False
-			self.requires_cookie = False
-			result = player_url
-			self.referer = ""
-			self.user_agent = ""
-			self.raw_data = ""
+			result = mega_handler(player_url)
 		elif mirror.vendor == 'Streamtape':
-			self.compatible_with_watchtogether = True
-			self.download_possible = True
-			self.requires_referer = False
-			self.requires_redirect = False
-			self.requires_browser_identity = False
-			self.requires_cookie = False
-			result = streamtape_handler(browser, player_url).url
-			self.referer = ""
-			self.user_agent = ""
-			self.raw_data = ""
+			result = streamtape_handler(browser, player_url)
 		elif mirror.vendor == 'Dood':
-			self.compatible_with_watchtogether = False
-			self.download_possible = True
-			self.requires_referer = True
-			self.requires_redirect = False
-			self.requires_browser_identity = False
-			self.requires_raw_data = False
-			self.requires_cookie = False
-			result = dood_handler(browser, player_url).url
-			self.referer = player_url
-			self.user_agent = ""
-			self.raw_data = ""
+			result = dood_handler(browser, player_url)
 		elif mirror.vendor == 'Streamsb':
-			self.compatible_with_watchtogether = False
-			self.download_possible = True
-			self.requires_referer = False
-			self.requires_redirect = False
-			self.requires_browser_identity = False
-			self.requires_raw_data = False
-			self.requires_cookie = False
-			result = streamsb_handler(browser, player_url, mirrors.vendor).url
-			self.referer = ""
-			self.user_agent = ""
-			self.raw_data = ""
+			result = streamsb_handler(browser, player_url, mirrors.vendor)
 		elif mirror.vendor == 'Cda':
-			self.compatible_with_watchtogether = True
-			self.download_possible = True
-			self.requires_referer = False
-			self.requires_redirect = False
-			self.requires_browser_identity = True
-			self.requires_raw_data = False
-			self.requires_cookie = False
-			result = cda_handler(browser, player_url).url
-			self.referer = ""
-			self.user_agent = browser.user_agent
-			self.raw_data = ""
+			result = cda_handler(browser, player_url)
 		elif mirror.vendor == 'Mp4upload':
-			self.compatible_with_watchtogether = False
-			self.download_possible = True
-			self.requires_referer = True
-			self.requires_redirect = False
-			self.requires_browser_identity = False
-			self.requires_tls_compromise = True
-			self.requires_raw_data = False
-			self.requires_cookie = False
-			result = mp4upload_handler(browser, player_url).url
-			self.referer = ""
-			self.user_agent = ""
-			self.raw_data = ''
+			result = mp4upload_handler(browser, player_url)
 		elif mirror.vendor == 'Vidloxtv':
-			self.compatible_with_watchtogether = False
-			self.download_possible = True
-			self.requires_referer = False
-			self.requires_redirect = False
-			self.requires_browser_identity = False
-			self.requires_raw_data = False
-			self.requires_cookie = False
-			result = vidlox_handler(browser, player_url).url
-			self.referer = ""
-			self.user_agent = ""
-			self.raw_data = ""
+			result = vidlox_handler(browser, player_url)
 		elif mirror.vendor == 'Vidoza':
-			self.compatible_with_watchtogether = False
-			self.download_possible = True
-			self.requires_referer = False
-			self.requires_redirect = False
-			self.requires_browser_identity = False
-			self.requires_raw_data = False
-			self.requires_cookie = False
-			result = vidoza_handler(browser, player_url, mirrors.vendor).url
-			self.referer = ""
-			self.user_agent = ""
-			self.raw_data = ""
+			result = vidoza_handler(browser, player_url, mirrors.vendor)
 		elif mirror.vendor == 'Fb':
-			self.compatible_with_watchtogether = False
-			self.download_possible = True
-			self.requires_referer = False
-			self.requires_redirect = False
-			self.requires_browser_identity = False
-			self.requires_raw_data = False
-			self.requires_cookie = False
-			result = facebook_handler(player_url).url
-			self.referer = ""
-			self.user_agent = ""
-			self.raw_data = ""
+			result = facebook_handler(player_url)
 		elif mirror.vendor == 'Vk':
-			self.compatible_with_watchtogether = False
-			self.download_possible = True
-			self.requires_referer = False
-			self.requires_redirect = False
-			self.requires_browser_identity = False
-			self.requires_raw_data = False
-			self.requires_cookie = False
-			result = vkontakte_handler(browser, player_url).url
-			self.referer = ""
-			self.user_agent = ""
-			self.raw_data = ""
+			result = vkontakte_handler(browser, player_url)
 		elif mirror.vendor == 'Aparat':
-			self.compatible_with_watchtogether = False
-			self.download_possible = True
-			self.requires_referer = False
-			self.requires_redirect = False
-			self.requires_browser_identity = False
-			self.requires_raw_data = False
-			self.requires_cookie = False
-			result = aparat_handler(player_url).url
-			self.referer = ""
-			self.user_agent = ""
-			self.raw_data = ""
+			result = aparat_handler(player_url)
 		elif mirror.vendor == 'Dailymotion':
-			self.compatible_with_watchtogether = True
-			self.download_possible = True
-			self.requires_referer = False
-			self.requires_redirect = False
-			self.requires_browser_identity = False
-			self.requires_raw_data = False
-			self.requires_cookie = False
-			result = dailymotion_handler(player_url).url
-			self.referer = ""
-			self.user_agent = ""
-			self.raw_data = ""
+			result = dailymotion_handler(player_url)
 		elif mirror.vendor == 'Yourupload':
-			self.compatible_with_watchtogether = False
-			self.download_possible = True
-			self.requires_referer = True
-			self.requires_redirect = False
-			self.requires_browser_identity = False
-			self.requires_raw_data = False
-			self.requires_cookie = False
 			tmp = yourupload_handler(player_url)
-			result = tmp.url
-			self.referer = tmp.referer
-			self.user_agent = ""
-			self.raw_data = ""
 		elif mirror.vendor == 'Myviru':
-			self.compatible_with_watchtogether = False
-			self.download_possible = True
-			self.requires_referer = False
-			self.requires_redirect = False
-			self.requires_browser_identity = False
-			self.requires_raw_data = False
-			self.requires_cookie = True
 			tmp = myviru_handler(player_url)
-			result = tmp.url
-			self.cookie = tmp.cookie
-			self.user_agent = ""
-			self.raw_data = ""
 		elif mirror.vendor == 'Mystream':
-			self.compatible_with_watchtogether = False
-			self.download_possible = True
-			result = mystream_handler(browser, player_url).url
+			result = mystream_handler(browser, player_url)
 		elif mirror.vendor == 'Upvid':
-			self.compatible_with_watchtogether = False
-			self.download_possible = True
-			result = upvid_handler(browser, player_url).url
+			result = upvid_handler(browser, player_url)
+		self.__fill_out_blanks(result)
+		pdb.set_trace()
 		browser.driver.get(shinden_url)
 		browser.wait_for_document_to_finish_loading()
 		return result
-	
+
 	def __init__(self, browser, mirror, supported_mirrors):
-		self.compatible_with_watchtogether = False
-		self.download_possible = False
-		self.requires_referer = False
-		self.requires_browser_identity = False
 		self.__compatible_mirror_types = supported_mirrors
+		everything_went_fine = False
+		self.mirror_info = None
 		try:
-			self.url = self.__get_url(browser, mirror)
+			self.mirror_info = self.__get_url(browser, mirror)
+			everything_went_fine = True
 		except DeadMirror:
-			self.url = ['DEAD URL']
+			pass
 		count = 0
-		for url in self.url:
-			print('Received URL #'+str(count+1)+': '+self.url[count])
-			count += 1
+		if everything_went_fine == True:
+			for url in self.mirror_info.url:
+				print('Received URL #'+str(count+1)+': '+self.mirror_info.url[count])
+				count += 1
+		else:
+			print('DEAD URL')

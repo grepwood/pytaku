@@ -52,3 +52,5 @@ class streamtape_handler(object):
 			url_to_obtain_direct_link = self.__get_request_url(browser)
 			rq_headers = { 'User-Agent': browser.user_agent, 'referer': url }
 			self.url.append(self.__get_url(url_to_obtain_direct_link, cookies_dict, rq_headers))
+		self.compatible_with_watchtogether = True
+		self.download_possible = True

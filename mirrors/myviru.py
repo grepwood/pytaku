@@ -26,3 +26,6 @@ class myviru_handler(object):
 			response = session.get(mess, allow_redirects=False, cookies=cookie_dict)
 			self.url.append(response.headers['Location'])
 			self.cookie.append(cookie_dict)
+		self.compatible_with_watchtogether = False
+		self.download_possible = True
+		self.requires_cookie = True

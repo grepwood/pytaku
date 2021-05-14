@@ -43,3 +43,5 @@ class aparat_handler(object):
 			secondary_url = self.__generate_secondary_url(primary_url)
 			final_url = self.__generate_direct_link(secondary_url)
 			self.url.append(final_url)
+		self.compatible_with_watchtogether = False
+		self.download_possible = True

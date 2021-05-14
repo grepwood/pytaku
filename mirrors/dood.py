@@ -16,3 +16,7 @@ class dood_handler(object):
 		for url in player_url:
 			self.__goto_streamtape(browser, dood_url)
 			self.url.append(self.__get_url(browser))
+		self.compatible_with_watchtogether = False
+		self.download_possible = True
+		self.requires_referer = True
+		self.referrer = dood_url

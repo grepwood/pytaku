@@ -13,3 +13,5 @@ class vkontakte_handler(object):
 			before_url = re.sub('^.*cache720":"', "", without_newlines)
 			after_url = re.sub('",".*$', "", before_url)
 			self.url.append(re.sub('\\\\/', "/", after_url))
+		self.compatible_with_watchtogether = False
+		self.download_possible = True

@@ -26,3 +26,5 @@ class facebook_handler(object):
 			with_nasty_backslashes = re.sub('".*$', "", without_beginning_of_declaration)
 			final_link = re.sub('\\\\', "", with_nasty_backslashes)
 			self.url.append(final_link)
+		self.compatible_with_watchtogether = False
+		self.download_possible = True

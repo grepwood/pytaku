@@ -17,3 +17,5 @@ class mystream_handler(object):
 			self.__goto_site(browser, url)
 			final_url = self.__extract_url(browser)
 			self.url.append(final_url)
+		self.compatible_with_watchtogether = False
+		self.download_possible = True

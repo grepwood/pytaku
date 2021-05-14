@@ -13,3 +13,6 @@ class yourupload_handler(object):
 			self.__response = self.__session.get(url)
 			self.__soup = BeautifulSoup(self.__response.text, "html.parser")
 			self.url.append(self.__soup.find('meta', {'property': 'og:video'}).attrs['content'])
+		self.compatible_with_watchtogether = False
+		self.download_possible = True
+		self.requires_referer = True

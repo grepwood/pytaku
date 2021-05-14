@@ -25,3 +25,5 @@ class upvid_handler(object):
 			browser.driver.switch_to.frame(secondary_iframe)
 			final_url = self.__extract_url(browser)
 			self.url.append(final_url)
+		self.compatible_with_watchtogether = False
+		self.download_possible = True
