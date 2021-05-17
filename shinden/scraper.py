@@ -5,7 +5,6 @@ from bs4 import BeautifulSoup
 import selenium
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
-import pdb
 
 from mirrors.aparat import aparat_handler
 from mirrors.cda import cda_handler
@@ -171,7 +170,6 @@ class direct_url(object):
 		elif mirror.vendor == 'Gdrive':
 			result = gdrive_handler(player_url)
 		self.__fill_out_blanks(result)
-		pdb.set_trace()
 		browser.driver.get(shinden_url)
 		browser.wait_for_document_to_finish_loading()
 		return result
