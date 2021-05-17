@@ -4,7 +4,8 @@ import re
 from prettytable import PrettyTable
 from bs4 import BeautifulSoup
 
-supported_mirrors = ['Sibnet', 'Mega', 'Streamtape', 'Dood', 'Streamsb', 'Cda', 'Mp4upload', 'Vidloxtv', 'Vidoza', 'Fb', 'Vk', 'Aparat', 'Dailymotion', 'Yourupload', 'Myviru', 'Mystream', 'Upvid']
+supported_mirrors = ['Sibnet', 'Mega', 'Streamtape', 'Dood', 'Streamsb', 'Cda', 'Mp4upload', 'Vidloxtv', 'Vidoza', 'Fb', 'Vk', 'Aparat', 'Dailymotion', 'Yourupload', 'Myviru', 'Mystream', 'Upvid', 'Cloudvideo', 'Crunchyroll', 'Gdrive']
+defunct_mirrors = ['Default', 'Vshare', 'Streammoe', 'Estream', 'Clipwatching']
 
 class mirror_object(object):
 	def __init__(self, html_soup):
@@ -22,6 +23,7 @@ class mirror_list(object):
 
 	def __init__(self, anime_id, episode_id, browser, graphic_interface=False):
 		global supported_mirrors
+		global defunct_mirrors
 		self.graphic_interface = graphic_interface
 		self.supported_mirrors = supported_mirrors
 		self.episode_url = "https://shinden.pl/episode/"+anime_id+"/view/"+episode_id
@@ -37,10 +39,12 @@ class mirror_list(object):
 		self.as_a_table.field_names = ['Numer', 'Źródło', 'Jakość', 'Język', 'Napisy', 'Data dodania', 'Wspierany']
 		for item in episode_tags.findAll('tr'):
 			detected_mirror = mirror_object(item)
-			if detected_mirror.vendor != 'Default':
+			if detected_mirror.vendor not in defunct_mirrors:
 				self.mirror.append(detected_mirror)
 				self.as_a_table.add_row([str(count+1), self.mirror[count].vendor, self.mirror[count].quality, self.mirror[count].audio_language, self.mirror[count].sub_language, self.mirror[count].date_added, self.__judge_mirror(self.mirror[count].vendor)])
 				count += 1
+			else:
+				print('Skipping defunct mirror: '+detected_mirror.vendor)
 		self.mirror_count = count
 	
 	def list_all(self):

@@ -10,9 +10,12 @@ import pdb
 from mirrors.aparat import aparat_handler
 from mirrors.cda import cda_handler
 from mirrors.cloud9 import cloud9_handler
+from mirrors.cloudvideo import cloudvideo_handler
+from mirrors.crunchyroll import crunchyroll_handler
 from mirrors.dailymotion import dailymotion_handler
 from mirrors.dood import dood_handler
 from mirrors.facebook import facebook_handler
+from mirrors.gdrive import gdrive_handler
 from mirrors.mega import mega_handler
 from mirrors.mp4upload import mp4upload_handler
 from mirrors.mystream import mystream_handler
@@ -59,7 +62,7 @@ class direct_url(object):
 		while player_url_list == []:
 			soup = self.__get_player_html(browser,mirror)
 			try:
-				if mirror.vendor in ['Yourupload']:
+				if mirror.vendor in ['Yourupload', 'Crunchyroll']:
 					players = soup.findAll('a', {'class': 'button-player'})
 					attribute_to_look_for = 'href'
 				elif mirror.vendor in ['Tunepk', 'Clipwatching']:
@@ -116,6 +119,10 @@ class direct_url(object):
 			test = result.requires_tls_compromise
 		except AttributeError:
 			result.requires_tls_compromise = False
+		try:
+			test = result.is_m3u8
+		except AttributeError:
+			result.is_m3u8 = False
 
 	def __get_url(self, browser, mirror):
 		if not mirror.vendor in self.__compatible_mirror_types:
@@ -157,6 +164,12 @@ class direct_url(object):
 			result = mystream_handler(browser, player_url)
 		elif mirror.vendor == 'Upvid':
 			result = upvid_handler(browser, player_url)
+		elif mirror.vendor == 'Cloudvideo':
+			result = cloudvideo_handler(player_url)
+		elif mirror.vendor == 'Crunchyroll':
+			result = crunchyroll_handler(player_url)
+		elif mirror.vendor == 'Gdrive':
+			result = gdrive_handler(player_url)
 		self.__fill_out_blanks(result)
 		pdb.set_trace()
 		browser.driver.get(shinden_url)
