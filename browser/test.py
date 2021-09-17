@@ -52,14 +52,7 @@ class browser_type(object):
 					command = "command -v ./"+self.webdriver+" >/dev/null"
 				process = subprocess.check_output(command, shell=True)
 			print('Detected webdriver: '+self.name)
-		except subprocess.CalledProcessError:
-			if self.tried_supplementing == False:
-				print('Supplementing missing webdriver for: ' + self.name)
-				self.tried_supplementing = supplement_webdriver(self).download()
-			else:
-				print('Supplementing failed')
-				self.errors += 2
-		except FileNotFoundError:
+		except (subprocess.CalledProcessError, FileNotFoundError):
 			if self.tried_supplementing == False:
 				print('Supplementing missing webdriver for: ' + self.name)
 				self.tried_supplementing = supplement_webdriver(self).download()

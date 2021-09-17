@@ -5,6 +5,7 @@ import traceback
 import time
 import requests
 from bs4 import BeautifulSoup
+import json
 
 class CaptchaFound(Exception):
 	"""Raised when we land on Cloudflare captcha instead of the player"""
@@ -30,10 +31,11 @@ class cda_file(object):
 	def __get_cda_video_id(self, url):
 		return re.sub("^.*/", "", url)
 
-	def __get_qualities(self, soup):
+	def __get_qualities(self, soup, cda_video_id):
 		result = []
-		for item in soup.find('div', attrs={'class': 'wrapqualitybtn'}).findChildren('a'):
-			result.append(item.text)
+		interesting_json = json.loads(soup.find('div', attrs={'id': 'mediaplayer'+cda_video_id}).attrs['player_data'])
+		for item in interesting_json['video']['qualities'].keys():
+			result.append(item)
 		return result
 
 	def __detect_captcha(self, browser):
@@ -73,7 +75,7 @@ class cda_file(object):
 		session = requests
 		response = session.get(cda_video_article_url)
 		soup = BeautifulSoup(response.text, "html.parser")
-		self.quality = self.__get_qualities(soup)
+		self.quality = self.__get_qualities(soup, cda_video_id)
 		self.url = []
 		timeout = 60
 		for quality in self.quality:

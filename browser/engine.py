@@ -6,6 +6,7 @@ import selenium
 import re
 
 import traceback
+import pdb
 
 import sys
 import itertools
@@ -118,11 +119,14 @@ class browser_engine(object):
 		return '//%s' % '/'.join(components)
 
 	def scroll_to_element(self,element):
-		actions = ActionChains(self.driver)
-		actions.send_keys_to_element(self.driver.find_elements_by_xpath('//html/body')[0], Keys.HOME).perform()
-		self.click_invisible_bullshit()
-		while not self.driver.find_elements_by_xpath(element)[0].is_displayed():
-			actions.send_keys_to_element(self.driver.find_elements_by_xpath('//html/body')[0], Keys.DOWN).perform()
+		try:
+			actions = ActionChains(self.driver)
+			actions.send_keys_to_element(self.driver.find_elements_by_xpath('//html/body')[0], Keys.HOME).perform()
+			self.click_invisible_bullshit()
+			while not self.driver.find_elements_by_xpath(element)[0].is_displayed():
+				actions.send_keys_to_element(self.driver.find_elements_by_xpath('//html/body')[0], Keys.DOWN).perform()
+		except:
+			pdb.set_trace()
 
 	def get_xpath_from_element(self, element):
 		components = []

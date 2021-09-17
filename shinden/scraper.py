@@ -36,8 +36,13 @@ class direct_url(object):
 	def __get_player_html(self, browser, mirror):
 		actions = ActionChains(browser.driver)
 		print('trying to snoop for '+mirror.vendor+' player on shinden')
-		browser.scroll_to_element('//*[@id="'+mirror.xpath+'"]')
-		browser.click_invisible_bullshit()
+		while True:
+			browser.scroll_to_element('//*[@id="'+mirror.xpath+'"]')
+			browser.click_invisible_bullshit()
+			if len(browser.driver.find_elements_by_xpath('//*[@id="'+mirror.xpath+'"]')) == 0:
+				browser.driver.refresh()
+			else:
+				break
 		while True:
 			try:
 				print('Clicking xpath '+mirror.xpath)
@@ -52,6 +57,7 @@ class direct_url(object):
 			page_source = browser.driver.find_elements_by_xpath('//html/body/div[4]/div/article/div[2]')[0].get_attribute('innerHTML')
 		except:
 			pdb.set_trace()
+		print('finished parsing player element')
 		soup = BeautifulSoup(page_source,"html.parser")
 		return soup
 	
