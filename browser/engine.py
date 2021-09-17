@@ -14,6 +14,7 @@ from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
+from xvfbwrapper import Xvfb
 
 class browser_engine(object):
 	def __init__(self, debug_mode=False, fast_mode=True, preferred_browser = None):
@@ -27,11 +28,16 @@ class browser_engine(object):
 		self.driver = ""
 		self.debug_mode = debug_mode
 		self.operating_system = sys.platform
+		self.xvfb = None
+		if not self.debug_mode:
+			self.xvfb = Xvfb(width=1920, height=1080)
+			self.xvfb.start()
 		if self.preferred_browser == 'firefox':
 			self.profile = webdriver.FirefoxProfile()
 			self.options = webdriver.FirefoxOptions()
 			self.profile.set_preference("intl.accept_languages", "pl")
-			self.options.headless = not self.debug_mode
+#			self.options.headless = not self.debug_mode
+			self.options.headless = False
 			self.profile.update_preferences()
 			if self.operating_system == 'darwin':
 				self.driver = webdriver.Firefox(self.profile, options=self.options, executable_path='./geckodriver')
@@ -40,7 +46,8 @@ class browser_engine(object):
 		elif self.preferred_browser == 'google-chrome-stable':
 			self.options = webdriver.ChromeOptions()
 			self.options.add_argument("-lang=pl")
-			self.options.headless = not self.debug_mode
+#			self.options.headless = not self.debug_mode
+			self.options.headless = False
 			if self.operating_system == 'darwin':
 				self.driver = webdriver.Chrome(options=self.options, executable_path='./chromedriver')
 			else:
@@ -49,6 +56,7 @@ class browser_engine(object):
 #			self.options = webdriver.EdgeOptions()
 #			self.options.add_argument("-lang=pl")
 #			self.options.headless = not self.debug_mode
+#			self.options.headless = False
 #			if self.operating_system == 'darwin':
 #				self.driver = webdriver.Edge(options=self.options, executable_path='./chromedriver')
 #			else:
@@ -78,6 +86,7 @@ class browser_engine(object):
 
 	def quit(self):
 		self.driver.quit()
+		self.xvfb.stop()
 		self.accepted_gpdr = False
 		self.accepted_cookies = False
 

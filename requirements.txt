@@ -2,3 +2,4 @@ bs4
 prettytable
 requests
 selenium
+xvfbwrapper

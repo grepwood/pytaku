@@ -36,13 +36,9 @@ class direct_url(object):
 	def __get_player_html(self, browser, mirror):
 		actions = ActionChains(browser.driver)
 		print('trying to snoop for '+mirror.vendor+' player on shinden')
-		while True:
+		while browser.driver.find_elements_by_xpath('//*[@id="'+mirror.xpath+'"]')) == 0:
 			browser.scroll_to_element('//*[@id="'+mirror.xpath+'"]')
 			browser.click_invisible_bullshit()
-			if len(browser.driver.find_elements_by_xpath('//*[@id="'+mirror.xpath+'"]')) == 0:
-				browser.driver.refresh()
-			else:
-				break
 		while True:
 			try:
 				print('Clicking xpath '+mirror.xpath)
@@ -90,7 +86,6 @@ class direct_url(object):
 				break
 			except IndexError:
 				print('error occurred on shinden, retryting')
-#				possible location: /html/body/div[4]/div/article/div[2]/div/div[2]/div
 				browser.driver.refresh()
 				browser.wait_for_document_to_finish_loading()
 		return player_url_list
