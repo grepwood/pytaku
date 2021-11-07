@@ -17,12 +17,22 @@ class gdrive_handler(object):
 				return item
 		return None
 
+	def __word_looks_like_garbage(self, word):
+		not_garbage = ['https:', '', 'drive.google.com', 'file', 'd', 'preview']
+		return not (word in not_garbage)
+
+	def __retrieve_video_id(self, address):
+		for word in address.split('/')[::-1]:
+			if self.__word_looks_like_garbage(word):
+				return word
+		return None
+
 	def __init__(self, player_url):
 		self.url = []
 		self.cookie = []
 		session = requests
 		for url in player_url:
-			google_id = url.split('/')[-1]
+			google_id = self.__retrieve_video_id(url)
 			magic_url = 'https://drive.google.com/uc?export=download&id=' + google_id
 			response = session.get(magic_url)
 			soup = BeautifulSoup(response.text, "html.parser")

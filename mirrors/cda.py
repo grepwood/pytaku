@@ -68,6 +68,11 @@ class cda_file(object):
 		soup = browser.handle_captcha(self.srapcza)
 		return self.__get_direct_link_from_soup(soup)
 
+	def __detect_removed_content(self, soup):
+		evidence_of_removal = 'Materiał został usunięty!'
+		content_message = soup.find('div', {'class': 'content'}).findChild('p').text
+		return content_message == evidence_of_removal
+
 	def __init__(self, url, browser):
 		self.srapcza = 'Attention Required! | Cloudflare'
 		cda_video_id = self.__get_cda_video_id(url)
@@ -75,37 +80,42 @@ class cda_file(object):
 		session = requests
 		response = session.get(cda_video_article_url)
 		soup = BeautifulSoup(response.text, "html.parser")
-		self.quality = self.__get_qualities(soup, cda_video_id)
 		self.url = []
-		timeout = 60
-		for quality in self.quality:
-			cda_embed_url = 'https://ebd.cda.pl/800x450/'+cda_video_id+'?wersja='+quality
-			print(cda_embed_url)
-			time_start = self.__get_time()
-			direct_link = ""
-			while True:
-				try:
-					direct_link = self.__get_direct_link(cda_embed_url, browser)
-				except CaptchaFound:
-					direct_link = self.__deal_with_captcha()
-				except IncompleteCdaLoad:
-					self.__throw_coop_refusal_if_exceeded_timeout(time_start, timeout)
-					next
-				except UnknownCdaError:
-					self.__throw_coop_refusal_if_exceeded_timeout(time_start, timeout)
-					next
-				if self.__verify_direct_link(direct_link):
-					time_start = self.__get_time()
-					break
-			self.url.append(direct_link)
-			print('Cda '+quality+': '+direct_link)
+		self.quality = []
+		if not self.__detect_removed_content(soup):
+			timeout = 60
+			self.quality = self.__get_qualities(soup, cda_video_id)
+			for quality in self.quality:
+				cda_embed_url = 'https://ebd.cda.pl/800x450/'+cda_video_id+'?wersja='+quality
+				print(cda_embed_url)
+				time_start = self.__get_time()
+				direct_link = ""
+				while True:
+					try:
+						direct_link = self.__get_direct_link(cda_embed_url, browser)
+					except CaptchaFound:
+						direct_link = self.__deal_with_captcha()
+					except IncompleteCdaLoad:
+						self.__throw_coop_refusal_if_exceeded_timeout(time_start, timeout)
+						next
+					except UnknownCdaError:
+						self.__throw_coop_refusal_if_exceeded_timeout(time_start, timeout)
+						next
+					if self.__verify_direct_link(direct_link):
+						time_start = self.__get_time()
+						break
+				self.url.append(direct_link)
+				print('Cda '+quality+': '+direct_link)
+		else:
+			print('This mirror is busted. Try something else')
 
 class cda_handler(object):
 	def __init__(self, browser, player_url):
 		self.url = []
 		for url in player_url:
 			x = cda_file(url, browser)
-			self.url.append(x.url[-1])
+			if x.url != []:
+				self.url.append(x.url[-1])
 		self.compatible_with_watchtogether = True
 		self.download_possible = True
 		self.requires_browser_identity = True
