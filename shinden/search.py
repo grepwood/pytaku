@@ -9,12 +9,16 @@ from shinden.ratings import shinden_ratings
 
 class search_result_class(object):
 	def __init__(self, html_soup):
-		self.id = re.sub("^.*/", "", re.sub("-.*$", "", str(html_soup.findAll('h3')[0])))
-		self.title = re.sub("^ *", "", html_soup.findAll('h3')[0].text)
-		self.broadcast = html_soup.findAll('li', attrs={'class', 'title-kind-col'})[0].text
-		self.episode_count = int(re.sub(" *$", "", html_soup.findAll('li', attrs={'class', 'episodes-col'})[0].text))
+		h3_tag = html_soup.find('h3')
+		type_and_full_id = h3_tag.findChild('a').attrs['href']
+		self.type = type_and_full_id.split('/')[1]
+		self.full_id = re.sub("^.*/", "", type_and_full_id)
+		self.id = int(re.sub("-.*$", "", self.full_id))
+		self.title = re.sub("^ *", "", h3_tag.text)
+		self.broadcast = html_soup.find('li', attrs={'class', 'title-kind-col'}).text
+		self.episode_count = int(re.sub(" *$", "", html_soup.find('li', attrs={'class', 'episodes-col'}).text))
 		self.ratings = shinden_ratings(html_soup)
-		self.tags = re.sub("\n$", "", re.sub("^\n", "", html_soup.findAll('ul', attrs={'class', 'tags'})[0].text)).split("\n")
+		self.tags = re.sub("\n$", "", re.sub("^\n", "", html_soup.find('ul', attrs={'class', 'tags'}).text)).split("\n")
 
 class ShindenDowntime(Exception):
 	"""
@@ -72,11 +76,11 @@ class shinden_search(object):
 			selected_anime = int(input("Select anime from above list (1-"+str(self.count)+"): "))
 			if selected_anime < 1 or selected_anime > self.count:
 				if selected_anime == 0:
-					return -1
+					return None
 			else:
 				selected_anime -= 1
 				if self.result[selected_anime].episode_count != 0:
-					return self.result[selected_anime].id
+					return self.result[selected_anime]
 				else:
 					print('This anime has no episodes. Choose something else.')
 

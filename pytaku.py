@@ -84,7 +84,8 @@ def main():
 						shinden.select_mirror(tm_mirror = tm_mirror)
 						if exception_caught == True:
 							shinden.mirrors.list_all()
-						shinden.get_direct_url()
+						if not (shinden.mirrors is None):
+							shinden.get_direct_url()
 						break
 					except CdaRefusesCooperation:
 						print('Cda refuses cooperation. Please choose another mirror AND avoid using Cda altogether during this session of pytaku.')

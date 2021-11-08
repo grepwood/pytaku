@@ -67,7 +67,13 @@ class mirror_list(object):
 
 	def __cli_select_mirror(self):
 		print('Select 0 to quit safely')
-		mirror_number = int(input("Enter mirror number (1-"+str(self.mirror_count)+"): "))
+		while True:
+			mirror_input = input("Enter mirror number (1-"+str(self.mirror_count)+"): ")
+			if re.match('^[0-9]+$', mirror_input):
+				break
+			else:
+				print('Numbers only, buddy')
+		mirror_number = int(mirror_input)
 		if mirror_number > self.mirror_count or mirror_number < 1:
 			if mirror_number == 0:
 				return -1

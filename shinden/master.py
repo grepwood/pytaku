@@ -53,15 +53,16 @@ class shinden_master_class(object):
 		self.search_results = results
 
 	def select_anime(self):
-		result = 0
+		anime_object = None
 		if self.test_mode == True:
-			result = self.search_results.result[0].id
+			anime_object = self.search_results.result[0]
 		else:
-			result = self.search_results.select_anime()
-		if result == -1:
+			anime_object = self.search_results.select_anime()
+		if anime_object is None:
 			self.quit_safely()
-		self.selected_anime_id = result
-		self.episodes = episode_list(self.selected_anime_id, self.important_cookie, graphic_interface=self.graphic_interface)
+		self.selected_anime_id = anime_object.full_id
+		self.selected_anime_type = anime_object.type
+		self.episodes = episode_list(self.selected_anime_id, self.selected_anime_type, self.important_cookie, graphic_interface=self.graphic_interface)
 		self.episodes.list_all()
 
 	def reload_episode_page(self):
@@ -78,31 +79,37 @@ class shinden_master_class(object):
 			if result == -1:
 				self.quit_safely()
 		self.selected_episode = self.episodes.id[result]
-		self.mirrors = mirror_list(self.selected_anime_id, self.selected_episode, self.browser, graphic_interface=self.graphic_interface)
-		self.mirrors.list_all()
+		if self.selected_episode is None:
+			self.mirrors = None
+		else:
+			self.mirrors = mirror_list(self.selected_anime_id, self.selected_episode, self.browser, graphic_interface=self.graphic_interface)
+			self.mirrors.list_all()
 
 	def get_episode_url(self):
 		return "https://shinden.pl/episode/"+self.selected_anime_id+"/view/"+self.selected_episode
 
 	def select_mirror(self, tm_mirror = -1):
-		result = 0
-		if self.test_mode == True:
-			if type(tm_mirror) is int:
-				if tm_mirror != -1:
-					result = tm_mirror
-				else:
-					result = 0
-			else:
-				result = self.mirrors.get_mirror_index_by_name(tm_mirror)
-				if result == -1:
-					print('Selecting by name did not work. Using first mirror.')
-					result = 0
+		if self.mirrors is None:
+			print('This episode has no mirrors. Try another episode')
 		else:
-			result = self.mirrors.select_mirror()
-		if result == -1:
-			self.quit_safely()
-		self.selected_mirror = result
-		self.mirror_to_scrape = self.mirrors.mirror[self.selected_mirror]
+			result = 0
+			if self.test_mode == True:
+				if type(tm_mirror) is int:
+					if tm_mirror != -1:
+						result = tm_mirror
+					else:
+						result = 0
+				else:
+					result = self.mirrors.get_mirror_index_by_name(tm_mirror)
+					if result == -1:
+						print('Selecting by name did not work. Using first mirror.')
+						result = 0
+			else:
+				result = self.mirrors.select_mirror()
+			if result == -1:
+				self.quit_safely()
+			self.selected_mirror = result
+			self.mirror_to_scrape = self.mirrors.mirror[self.selected_mirror]
 		
 	def get_direct_url(self):
 		self.direct_url = direct_url(self.browser, self.mirror_to_scrape, self.mirrors.supported_mirrors)

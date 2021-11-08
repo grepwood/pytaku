@@ -5,9 +5,6 @@ from bs4 import BeautifulSoup
 import selenium
 import re
 
-import traceback
-import pdb
-
 import sys
 import itertools
 from selenium import webdriver
@@ -128,14 +125,11 @@ class browser_engine(object):
 		return '//%s' % '/'.join(components)
 
 	def scroll_to_element(self,element):
-		try:
-			actions = ActionChains(self.driver)
-			actions.send_keys_to_element(self.driver.find_elements_by_xpath('//html/body')[0], Keys.HOME).perform()
-			self.click_invisible_bullshit()
-			while not self.driver.find_elements_by_xpath(element)[0].is_displayed():
-				actions.send_keys_to_element(self.driver.find_elements_by_xpath('//html/body')[0], Keys.DOWN).perform()
-		except:
-			pdb.set_trace()
+		actions = ActionChains(self.driver)
+		actions.send_keys_to_element(self.driver.find_elements_by_xpath('//html/body')[0], Keys.HOME).perform()
+		self.click_invisible_bullshit()
+		while not self.driver.find_elements_by_xpath(element)[0].is_displayed():
+			actions.send_keys_to_element(self.driver.find_elements_by_xpath('//html/body')[0], Keys.DOWN).perform()
 
 	def get_xpath_from_element(self, element):
 		components = []
@@ -181,28 +175,24 @@ class browser_engine(object):
 	
 	def accept_cookies(self):
 		if self.accepted_cookies == False:
-			try:
-				print('Accepting cookies')
-				self.wait_for_document_to_finish_loading()
-				cookie_accept_button_xpath = self.find_xpath_by_text('Akceptuję')
-				self.wait_for_element_to_appear(cookie_accept_button_xpath)
-				while True:
+			print('Accepting cookies')
+			self.wait_for_document_to_finish_loading()
+			cookie_accept_button_xpath = self.find_xpath_by_text('Akceptuję')
+			self.wait_for_element_to_appear(cookie_accept_button_xpath)
+			while True:
+				try:
+					self.driver.find_elements_by_xpath(cookie_accept_button_xpath)[0].click()
+					break
+				except selenium.common.exceptions.ElementClickInterceptedException:
 					try:
+						self.click_invisible_bullshit()
+					except selenium.common.exceptions.StaleElementReferenceException:
+						print('bullshit element is stale, it is ok to accept cookies')
+					try:
+						self.click_invisible_bullshit()
+					except selenium.common.exceptions.ElementNotInteractableException:
 						self.driver.find_elements_by_xpath(cookie_accept_button_xpath)[0].click()
-						break
-					except selenium.common.exceptions.ElementClickInterceptedException:
-						try:
-							self.click_invisible_bullshit()
-						except selenium.common.exceptions.StaleElementReferenceException:
-							print('bullshit element is stale, it is ok to accept cookies')
-						try:
-							self.click_invisible_bullshit()
-						except selenium.common.exceptions.ElementNotInteractableException:
-							self.driver.find_elements_by_xpath(cookie_accept_button_xpath)[0].click()
-				print('Cookies accepted')
-			except:
-				traceback.print_exc()
-				pdb.set_trace()
+			print('Cookies accepted')
 			self.accepted_cookies = True
 	
 	def wait_for_countdown(self):

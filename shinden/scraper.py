@@ -49,10 +49,7 @@ class direct_url(object):
 		print('waiting for countdown')
 		browser.wait_for_countdown()
 		print('parsing player element')
-		try:
-			page_source = browser.driver.find_elements_by_xpath('//html/body/div[4]/div/article/div[2]')[0].get_attribute('innerHTML')
-		except:
-			pdb.set_trace()
+		page_source = browser.driver.find_elements_by_xpath('//html/body/div[4]/div/article/div[2]')[0].get_attribute('innerHTML')
 		print('finished parsing player element')
 		soup = BeautifulSoup(page_source,"html.parser")
 		return soup

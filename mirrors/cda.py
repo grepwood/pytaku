@@ -64,14 +64,16 @@ class cda_file(object):
 	def __verify_direct_link(self, direct_link):
 		return re.match("^https://[a-z0-9]*.cda.pl/", direct_link)
 
-	def __deal_with_captcha(self):
+	def __deal_with_captcha(self, browser):
 		soup = browser.handle_captcha(self.srapcza)
 		return self.__get_direct_link_from_soup(soup)
 
 	def __detect_removed_content(self, soup):
 		evidence_of_removal = 'Materiał został usunięty!'
-		content_message = soup.find('div', {'class': 'content'}).findChild('p').text
-		return content_message == evidence_of_removal
+		content_message = soup.find('div', {'class': 'content'}).findChild('p')
+		if content_message is None:
+			return False
+		return content_message.text == evidence_of_removal
 
 	def __init__(self, url, browser):
 		self.srapcza = 'Attention Required! | Cloudflare'
@@ -94,7 +96,7 @@ class cda_file(object):
 					try:
 						direct_link = self.__get_direct_link(cda_embed_url, browser)
 					except CaptchaFound:
-						direct_link = self.__deal_with_captcha()
+						direct_link = self.__deal_with_captcha(browser)
 					except IncompleteCdaLoad:
 						self.__throw_coop_refusal_if_exceeded_timeout(time_start, timeout)
 						next

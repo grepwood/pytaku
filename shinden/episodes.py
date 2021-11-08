@@ -6,33 +6,47 @@ from bs4 import BeautifulSoup
 from prettytable import PrettyTable
 
 class episode_list(object):
-	def __init__(self, anime_id, cookie_dict, graphic_interface=False):
+	def __init__(self, anime_id, anime_type, cookie_dict, graphic_interface=False):
 		self.graphic_interface = graphic_interface
-		query_url = "https://shinden.pl/series/"+anime_id+"/all-episodes"
+		query_url = "https://shinden.pl/" + anime_type + "/" + anime_id + "/all-episodes"
+		print(query_url)
 		req = requests.get(query_url, cookies=cookie_dict)
 		soup = BeautifulSoup(req.content, "html.parser")
-		big_tag_matrix = soup.findAll('tbody', attrs={'class','list-episode-checkboxes'})[0].findAll('td')
-		self.episode_count = int(len(big_tag_matrix)/6)
+		big_tag_matrix = soup.find('tbody', attrs={'class': 'list-episode-checkboxes'})
+		episode_tag_array = big_tag_matrix.findChildren('tr')[::-1]
+		self.episode_count = len(episode_tag_array)
 		self.title = []
 		self.id = []
 		count = 0
 		self.as_a_table = PrettyTable()
-		self.as_a_table.field_names = ['Numer', 'Tytuł']
+		self.as_a_table.field_names = ['Numer', 'Tytuł', 'Ma mirrory']
 		while count < self.episode_count:
-			episode_id = re.sub('^.*/view/','',big_tag_matrix[(self.episode_count - count - 1)*6+5].findChild('a')['href'])
-			title = big_tag_matrix[(self.episode_count - count - 1)*6+1].get_text(strip=True)
+			episode_number = episode_tag_array[count].findChild('td').text
+			episode_id = None
+			episode_button = episode_tag_array[count].findChild('td', attrs={'class': 'button-group'})
+			has_mirrors = 'Nie'
+			if not (episode_button is None):
+				episode_id = episode_button.findChild('a')['href'].split('/')[-1]
+				has_mirrors = 'Tak'
+			title = episode_tag_array[count].findChild('td', attrs={'class': 'ep-title'}).text
 			self.title.append(title)
 			self.id.append(episode_id)
+			self.as_a_table.add_row([episode_number, title, has_mirrors])
 			count += 1
-			self.as_a_table.add_row([str(count), title])
-	
+
 	def list_all(self):
 		print(self.as_a_table)
 
 	def __cli_select_episode(self):
 		while True:
 			print('Select 0 to quit safely')
-			episode_number = int(input("Enter episode number (1-"+str(self.episode_count)+"): "))
+			while True:
+				input_episode = input("Enter episode number (1-"+str(self.episode_count)+"): ")
+				if re.match('^[0-9]+$', input_episode):
+					break
+				else:
+					print('Numbers only, buddy')
+			episode_number = int(input_episode)
 			if episode_number > self.episode_count or episode_number < 1:
 				if episode_number == 0:
 					return -1
