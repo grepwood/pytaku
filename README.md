@@ -14,14 +14,12 @@ For now, the program can only run from the terminal. Sorry. If you intend to run
 On anything but Windows:
 1. Install a supported browser.
 2. Install its webdriver.
-3. Install packages that provide modules listed in requirements.txt. If your system does not package them, do `python3 -m pip install --user -r requirements.txt`
+3. Install packages that provide modules listed in requirements.txt. Some of them might not be available through the package manager, so once you've done your best, do `python3 -m pip install --user -r requirements.txt`
 4. `./pytaku.py`
 
 On Windows:
-1. Install Python 3.8.
-2. Install a supported browser.
-3. `python -m pip install --user -r requirements.txt`
-4. `python pytaku.py`
+1. Install Gentoo. Shinden took care of not supporting your OS. Sorry, I tried to prevent this.
+2. If you cannot install Gentoo, consider Windows Subsystem For Linux.
 
 On MacOS:
 1. Install a supported browser.
@@ -32,4 +30,4 @@ Supported browsers:
 - Mozilla Firefox
 - Google Chrome
 
-This program was developed on Gentoo Linux, Windows 10, and MacOS Big Sur on Python 3.8 but it should work with other setups just as well. If something doesn't work, let me know in the issues so I can actually track them.
+This program was developed on Gentoo Linux and MacOS Big Sur on Python 3.9 but it should work with other setups just as well. If something doesn't work, let me know in the issues so I can actually track them. Windows support is off limits until it supports Xvfb.
