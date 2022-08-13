@@ -31,11 +31,13 @@ class gdrive_handler(object):
 		self.url = []
 		self.cookie = []
 		session = requests
+		close_header = {'Connection':'close'}
 		for url in player_url:
 			google_id = self.__retrieve_video_id(url)
 			magic_url = 'https://drive.google.com/uc?export=download&id=' + google_id
 			response = session.get(magic_url)
 			soup = BeautifulSoup(response.text, "html.parser")
+			session.post(magic_url, headers=close_header)
 			confirmation_code = self.__fish_out_confirmation_code(soup)
 			magic_cookie = self.__fish_out_cookie(response)
 			cookies = {magic_cookie: confirmation_code}

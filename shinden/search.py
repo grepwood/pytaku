@@ -42,12 +42,14 @@ class shinden_search(object):
 
 	def __make_string_url_friendly(self, input_text):
 		return re.sub(" ", "+", input_text)
-	
+
 	def __init__(self, search_term, cookie_dict, graphic_interface=False):
 		self.graphic_interface = graphic_interface
 		url = 'https://shinden.pl/series?search='+self.__make_string_url_friendly(search_term)
 		session = requests
+		close_header = {'Connection':'close'}
 		response = session.get(url, cookies=cookie_dict)
+		session.post(url, cookies=cookie_dict, headers=close_header)
 		soup = BeautifulSoup(response.text, "html.parser")
 		try:
 			crazy_table = soup.findAll('section', attrs={'class', 'title-table'})[0].findAll('article')[0]

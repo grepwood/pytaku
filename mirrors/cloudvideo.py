@@ -55,9 +55,12 @@ class cloudvideo_handler(object):
 
 	def __init__(self, player_url):
 		self.url = []
+		session = requests
+		close_header = {'Connection':'close'}
 		for url in player_url:
-			response = requests.get(url)
+			response = session.get(url)
 			soup = BeautifulSoup(response.text, "html.parser")
+			session.post(url, headers=close_header)
 			if self.__detect_death(soup) == True:
 				raise DeadMirror
 			magic_script = self.__find_magic_script(soup)

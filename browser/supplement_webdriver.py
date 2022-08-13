@@ -23,6 +23,7 @@ class supplement_webdriver(object):
 		self.__webdriver_exe = browser_type.windows_webdriver if self.__operating_system in self.__nsa_botnet else browser_type.webdriver
 		self.__browser_exe = browser_type.windows_exe if self.__operating_system in self.__nsa_botnet else browser_type.exe
 		self.__browser_name = browser_type.name
+		self.__close_header = {'Connection':'close'}
 
 	def download(self):
 		self.__supplement_missing_webdrivers_on_compromised_systems()
@@ -50,7 +51,9 @@ class supplement_webdriver(object):
 
 	def __get_geckodriver_url(self):
 		session = requests
-		response = session.get('https://github.com/mozilla/geckodriver/releases/latest', allow_redirects=False)
+		github_geckodriver_url = 'https://github.com/mozilla/geckodriver/releases/latest'
+		response = session.get(github_geckodriver_url, allow_redirects=False)
+		session.post(github_geckodriver_url, allow_redirects=False, headers=self.__close_header)
 		geckodriver_version = re.sub("^.*/v", "", response.headers['Location'])
 		geckodriver_url = None
 		if self.__operating_system in self.__nsa_botnet:
@@ -74,7 +77,9 @@ class supplement_webdriver(object):
 	def __get_chromedriver_version(self, chrome_version):
 		session = requests
 		good_fit = None
-		response = session.get('https://chromedriver.storage.googleapis.com/?delimiter=/&prefix=')
+		chromedriver_listing_url = 'https://chromedriver.storage.googleapis.com/?delimiter=/&prefix='
+		response = session.get(chromedriver_listing_url)
+		session.post(chromedriver_listing_url, headers=self.__close_header)
 		soup = BeautifulSoup(response.text, "html.parser")
 		available_chromedriver_versions = self.__curate_xhr_chromedriver_list(soup)
 		matching_versions = difflib.get_close_matches(chrome_version, available_chromedriver_versions)
@@ -91,6 +96,7 @@ class supplement_webdriver(object):
 		result = 'https://chromedriver.storage.googleapis.com/' + chromedriver_version
 		if self.__operating_system == 'darwin':
 			result += '/chromedriver_mac64'
+# I have no idea how to properly detect an ARM Mac, sorry
 			if platform.machine() != 'x86_64':
 				result += '_m1'
 		elif self.__operating_system in self.__nsa_botnet:
@@ -99,9 +105,13 @@ class supplement_webdriver(object):
 		return result
 
 	def __download_webdriver(self, url):
-		myfile = requests.get(url)
+		session = requests
+		myfile = session.get(url)
+		session.post(url, headers=self.__close_header)
 		filename = url.split('/')[-1]
-		open(filename, 'wb').write(myfile.content)
+		file_handle = open(filename, 'wb')
+		file_handle.write(myfile.content)
+		file_handle.close()
 
 	def __unpack_webdriver(self, filename):
 		if filename.split('.')[-1] == 'zip':

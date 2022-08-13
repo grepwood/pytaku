@@ -8,6 +8,7 @@ class sibnet_handler(object):
 	def __retrieve_secondary_url(self, url):
 		response = self.__session.get(url)
 		soup = BeautifulSoup(response.text,"html.parser")
+		self.__session.post(url, headers=self.__close_header)
 		silly_javascript = str(soup.findAll('script', {'type': 'text/javascript'})[4])
 		without_junk_after_mp4 = re.sub(".mp4.*$", ".mp4", silly_javascript)
 		mp4_location = re.sub('^.*src: "', "", without_junk_after_mp4)
@@ -20,17 +21,19 @@ class sibnet_handler(object):
 		result = ""
 		while True:
 			rq_response = self.__session.get(sibnet_next_url, allow_redirects=False, headers=rq_headers)
+			self.__session.post(sibnet_next_url, headers=self.__close_header)
 			if not re.match('^//',rq_response.headers['Location']) and rq_response.status_code == 302:
 				result = rq_response.headers['Location']
 				break
 			else:
 				sibnet_next_url = re.sub('^//','https://',rq_response.headers['Location'])
 		return result
-	
+
 	def __init__(self, user_agent, sibnet_url):
 		self.url = []
 		self.__user_agent = user_agent
 		self.__session = requests
+		self.__close_header = {'Connection':'close'}
 		for url in sibnet_url:
 			secondary_url = self.__retrieve_secondary_url(url)
 			final_url = self.__request_dance(url, secondary_url)

@@ -12,13 +12,15 @@ class facebook_handler(object):
 				return count
 			count += 1
 		raise ValueError("Facebook handler could not find src_no_ratelimit")
-			
+
 	def __init__(self, player_url):
 		self.url = []
 		self.__session = requests
+		close_header = {'Connection':'close'}
 		for url in player_url:
 			self.__session = requests.get(url)
 			self.__soup = BeautifulSoup(self.__session.text, "html.parser")
+			self.__session.post(url, headers=close_header)
 			script_index = self.__find_script_with_mp4()
 			messy_js = str(self.__soup.findAll('script')[script_index])
 # hd_src can also be replaced with src_no_ratelimit for smaller videos

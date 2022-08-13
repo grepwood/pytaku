@@ -9,8 +9,11 @@ class episode_list(object):
 	def __init__(self, anime_id, anime_type, cookie_dict, graphic_interface=False):
 		self.graphic_interface = graphic_interface
 		query_url = "https://shinden.pl/" + anime_type + "/" + anime_id + "/all-episodes"
-		print(query_url)
-		req = requests.get(query_url, cookies=cookie_dict)
+		print('Listing episodes from: ' + query_url)
+		session = requests
+		close_header = {'Connection':'close'}
+		req = session.get(query_url, cookies=cookie_dict)
+		session.post(query_url, cookies=cookie_dict, headers=close_header)
 		soup = BeautifulSoup(req.content, "html.parser")
 		big_tag_matrix = soup.find('tbody', attrs={'class': 'list-episode-checkboxes'})
 		episode_tag_array = big_tag_matrix.findChildren('tr')[::-1]

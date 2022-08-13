@@ -6,7 +6,9 @@ from mirrors.exceptions.dead import DeadMirror
 class cloud9_handler(object):
 	def __is_mirror_dead(self):
 		response = self.__session.get(player_url)
-		return response.status_code == 404
+		status_code = response.status_code
+		self.__session.post(player_url, headers={'Connection':'close'})
+		return status_code == 404
 
 	def __init__(self, browser, player_url):
 		self.url = []

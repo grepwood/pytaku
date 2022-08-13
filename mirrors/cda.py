@@ -82,6 +82,7 @@ class cda_file(object):
 		session = requests
 		response = session.get(cda_video_article_url)
 		soup = BeautifulSoup(response.text, "html.parser")
+		session.post(cda_video_article_url, headers={'Connection':'close'})
 		self.url = []
 		self.quality = []
 		if not self.__detect_removed_content(soup):
