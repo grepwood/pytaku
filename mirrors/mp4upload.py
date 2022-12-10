@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import requests
+from selenium.webdriver.common.by import By
 from mirrors.exceptions.dead import DeadMirror
 
 class mp4upload_handler(object):
@@ -21,7 +22,7 @@ class mp4upload_handler(object):
 			if self.__is_mirror_dead(url) == True:
 				raise DeadMirror
 			self.__goto_mp4upload(browser, url)
-			self.url.append(browser.driver.find_elements_by_xpath('//*[@id="player_html5_api"]')[0].get_attribute('src'))
+			self.url.append(browser.driver.find_element(By.XPATH, '//*[@id="player_html5_api"]').get_attribute('src'))
 		self.compatible_with_watchtogether = False
 		self.download_possible = True
 		self.requires_referer = True

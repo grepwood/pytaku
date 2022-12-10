@@ -2,5 +2,5 @@ PyQt5
 bs4
 prettytable
 requests
-selenium
+selenium>=4.3.0
 xvfbwrapper

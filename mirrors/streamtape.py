@@ -3,6 +3,7 @@
 import re
 import json
 import requests
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 
@@ -14,8 +15,8 @@ class streamtape_handler(object):
 	def __click_play(self, browser):
 		print('simulate clicking play')
 		actions = ActionChains(browser.driver)
-		actions.send_keys_to_element(browser.driver.find_elements_by_xpath('//html/body/div[2]/div[1]')[0], Keys.ENTER).perform()
-		browser.driver.find_elements_by_xpath('//html/body/div[2]/div[2]/button')[0].click()
+		actions.send_keys_to_element(browser.driver.find_element(By.XPATH, '//html/body/div[2]/div[1]'), Keys.ENTER).perform()
+		browser.driver.find_element(By.XPATH, '//html/body/div[2]/div[2]/button').click()
 
 	def __get_cookies(self, browser):
 		cookie_b = browser.get_cookie_even_if_it_takes_time('_b')
@@ -26,7 +27,7 @@ class streamtape_handler(object):
 		return { cookie_b['name']: cookie_b['value'], cookie_cloudflare['name']: cookie_cloudflare['value'], cookie_ym_d['name']: cookie_ym_d['value'], cookie_ym_isad['name']: cookie_ym_isad['value'], cookie_ym_uid['name']: cookie_ym_uid['value'] }
 
 	def __get_request_url(self, browser):
-		html_hint = browser.driver.find_elements_by_xpath('//html/body/script[6]')[0].get_attribute('innerHTML')
+		html_hint = browser.driver.find_element(By.XPATH, '//html/body/script[6]').get_attribute('innerHTML')
 		without_tabs = re.sub('\\t','',html_hint)
 		without_newlines = re.sub('\\n','',without_tabs)
 		without_code = re.sub(';.*$','',without_newlines)

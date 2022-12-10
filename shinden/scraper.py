@@ -3,6 +3,7 @@
 import re
 from bs4 import BeautifulSoup
 import selenium
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 
@@ -36,20 +37,20 @@ class direct_url(object):
 	def __get_player_html(self, browser, mirror):
 		actions = ActionChains(browser.driver)
 		print('trying to snoop for '+mirror.vendor+' player on shinden')
-		while browser.driver.find_elements_by_xpath('//*[@id="'+mirror.xpath+'"]') == 0:
+		while browser.driver.find_elements(By.XPATH, '//*[@id="'+mirror.xpath+'"]') == 0:
 			browser.scroll_to_element('//*[@id="'+mirror.xpath+'"]')
 			browser.click_invisible_bullshit()
 		while True:
 			try:
 				print('Clicking xpath '+mirror.xpath)
-				browser.driver.find_elements_by_xpath('//*[@id="'+mirror.xpath+'"]')[0].click()
+				browser.driver.find_element(By.XPATH, '//*[@id="'+mirror.xpath+'"]').click()
 				break
 			except selenium.common.exceptions.ElementClickInterceptedException:
-				actions.send_keys_to_element(browser.driver.find_elements_by_xpath('//html/body')[0], Keys.DOWN).perform()
+				actions.send_keys_to_element(browser.driver.find_element(By.XPATH, '//html/body'), Keys.DOWN).perform()
 		print('waiting for countdown')
 		browser.wait_for_countdown()
 		print('parsing player element')
-		page_source = browser.driver.find_elements_by_xpath('//html/body/div[4]/div/article/div[2]')[0].get_attribute('innerHTML')
+		page_source = browser.driver.find_element(By.XPATH, '//html/body/div[4]/div/article/div[2]').get_attribute('innerHTML')
 		print('finished parsing player element')
 		soup = BeautifulSoup(page_source,"html.parser")
 		return soup

@@ -4,13 +4,14 @@ import browser.test as detect_browsers
 from bs4 import BeautifulSoup
 import selenium
 import re
-
+import pdb
 import sys
 import itertools
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
+from selenium.webdriver.common.by import By
 from xvfbwrapper import Xvfb
 
 class browser_engine(object):
@@ -106,7 +107,8 @@ class browser_engine(object):
 				except:
 					next
 			print('Found GDPR accept button in xpath ' + nasty_div)
-			self.driver.find_elements_by_xpath(nasty_div)[0].click()
+#			pdb.set_trace()
+			self.driver.find_element(By.XPATH, nasty_div).click()
 			print('GDPR accepted')
 			self.accepted_gdpr = True
 
@@ -126,10 +128,10 @@ class browser_engine(object):
 
 	def scroll_to_element(self,element):
 		actions = ActionChains(self.driver)
-		actions.send_keys_to_element(self.driver.find_elements_by_xpath('//html/body')[0], Keys.HOME).perform()
+		actions.send_keys_to_element(self.driver.find_element(By.XPATH, '//html/body'), Keys.HOME).perform()
 		self.click_invisible_bullshit()
-		while not self.driver.find_elements_by_xpath(element)[0].is_displayed():
-			actions.send_keys_to_element(self.driver.find_elements_by_xpath('//html/body')[0], Keys.DOWN).perform()
+		while not self.driver.find_element(By.XPATH, element).is_displayed():
+			actions.send_keys_to_element(self.driver.find_element(By.XPATH, '//html/body'), Keys.DOWN).perform()
 
 	def get_xpath_from_element(self, element):
 		components = []
@@ -153,7 +155,7 @@ class browser_engine(object):
 			print('Bullshit has not been detected')
 			return
 		bullshit_xpath = self.get_xpath_from_element(bullshit_div)
-		bullshit_element = self.driver.find_elements_by_xpath(bullshit_xpath)
+		bullshit_element = self.driver.find_elements(By.XPATH, bullshit_xpath)
 		actions = ActionChains(self.driver)
 		print('clicking invisible bullshit')
 		while True:
@@ -163,7 +165,7 @@ class browser_engine(object):
 				else:
 					print('clicking bullshit')
 					try:
-						actions.send_keys_to_element(self.driver.find_elements_by_xpath('//html/body')[0], Keys.HOME).perform()
+						actions.send_keys_to_element(self.driver.find_element(By.XPATH, '//html/body'), Keys.HOME).perform()
 						bullshit_element[0].click()
 					except selenium.common.exceptions.StaleElementReferenceException:
 						print('bullshit disappeared before clicking it')
@@ -181,7 +183,7 @@ class browser_engine(object):
 			self.wait_for_element_to_appear(cookie_accept_button_xpath)
 			while True:
 				try:
-					self.driver.find_elements_by_xpath(cookie_accept_button_xpath)[0].click()
+					self.driver.find_element(By.XPATH, cookie_accept_button_xpath).click()
 					break
 				except selenium.common.exceptions.ElementClickInterceptedException:
 					try:
@@ -191,16 +193,16 @@ class browser_engine(object):
 					try:
 						self.click_invisible_bullshit()
 					except selenium.common.exceptions.ElementNotInteractableException:
-						self.driver.find_elements_by_xpath(cookie_accept_button_xpath)[0].click()
+						self.driver.find_element(By.XPATH, cookie_accept_button_xpath).click()
 			print('Cookies accepted')
 			self.accepted_cookies = True
 	
 	def wait_for_countdown(self):
-		while self.driver.find_elements_by_xpath('//*[@id="countdown"]') != []: next
+		while self.driver.find_elements(By.XPATH, '//*[@id="countdown"]') != []: next
 	
 	def wait_for_element_to_appear(self, element):
 		print('Waiting for element to appear: ' + element)
-		while self.driver.find_elements_by_xpath(element) == []: next
+		while self.driver.find_elements(By.XPATH, element) == []: next
 		print('Element appeared')
 	
 	def get_cookie_even_if_it_takes_time(self, cookie_name):
