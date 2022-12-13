@@ -70,14 +70,14 @@ class shinden_master_class(object):
 		self.browser.wait_for_document_to_finish_loading()
 
 	def select_episode(self, episode=-1):
-		if episode != -1:
-			result = episode
-		else:
+		result = episode
+		if episode == -1:
 			result = 0
 			if self.test_mode == False:
 				result = self.episodes.select_episode()
 			if result == -1:
 				self.quit_safely()
+		result -= 1
 		self.selected_episode = self.episodes.id[result]
 		if self.selected_episode is None:
 			self.mirrors = None
